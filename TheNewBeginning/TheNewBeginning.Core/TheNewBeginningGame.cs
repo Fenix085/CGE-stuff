@@ -13,11 +13,13 @@ namespace TheNewBeginning.Core
     /// The main class for the game, responsible for managing game components, settings, 
     /// and platform-specific configurations.
     /// </summary>
-    private GraphicsDeviceManager _graphics;
-    private GameManager _gameManager;
+    
+    
     public class TheNewBeginningGame : Game
     {
         // Resources for drawing.
+        private GraphicsDeviceManager _graphics;
+        private GameManager _gameManager;
         Texture2D playerTexture;
         private GraphicsDeviceManager graphicsDeviceManager;
         private SpriteBatch _spriteBatch;
