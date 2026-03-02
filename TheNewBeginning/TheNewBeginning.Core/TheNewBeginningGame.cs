@@ -13,11 +13,14 @@ namespace TheNewBeginning.Core
     /// The main class for the game, responsible for managing game components, settings, 
     /// and platform-specific configurations.
     /// </summary>
+    private GraphicsDeviceManager _graphics;
+    private GameManager _gameManager;
     public class TheNewBeginningGame : Game
     {
         // Resources for drawing.
+        Texture2D playerTexture;
         private GraphicsDeviceManager graphicsDeviceManager;
-
+        private SpriteBatch _spriteBatch;
         /// <summary>
         /// Indicates if the game is running on a mobile platform.
         /// </summary>
@@ -35,15 +38,12 @@ namespace TheNewBeginning.Core
         /// </summary>
         public TheNewBeginningGame()
         {
-            graphicsDeviceManager = new GraphicsDeviceManager(this);
-
-            // Share GraphicsDeviceManager as a service.
-            Services.AddService(typeof(GraphicsDeviceManager), graphicsDeviceManager);
-
+            _graphics = new GraphicsDeviceManager(this);
+        
+            _graphics.PreferredBackBufferWidth = 1280;
+            _graphics.PreferredBackBufferHeight = 720;
             Content.RootDirectory = "Content";
-
-            // Configure screen orientations.
-            graphicsDeviceManager.SupportedOrientations = DisplayOrientation.LandscapeLeft | DisplayOrientation.LandscapeRight;
+            IsMouseVisible = true;
         }
 
         /// <summary>
@@ -73,6 +73,11 @@ namespace TheNewBeginning.Core
         /// </summary>
         protected override void LoadContent()
         {
+            _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            // TODO: use this.Content to load your game content here
+            playerTexture = Content.Load<Texture2D>("player");      
+            
             base.LoadContent();
         }
 
@@ -103,9 +108,11 @@ namespace TheNewBeginning.Core
         protected override void Draw(GameTime gameTime)
         {
             // Clears the screen with the MonoGame orange color before drawing.
-            GraphicsDevice.Clear(Color.MonoGameOrange);
+            GraphicsDevice.Clear(Color.Gray);
 
-            // TODO: Add your drawing code here
+            _spriteBatch.Begin();
+            _spriteBatch.Draw(playerTexture, new Vector2(0, 0), Color.White);
+            _spriteBatch.End();
 
             base.Draw(gameTime);
         }
