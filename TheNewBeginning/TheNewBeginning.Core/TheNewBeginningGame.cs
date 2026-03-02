@@ -20,9 +20,10 @@ namespace TheNewBeginning.Core
         // Resources for drawing.
         private GraphicsDeviceManager _graphics;
         private GameManager _gameManager;
-        Texture2D playerTexture;
-        private GraphicsDeviceManager graphicsDeviceManager;
-        private SpriteBatch _spriteBatch;
+        // Texture2D playerTexture;
+        // private GraphicsDeviceManager graphicsDeviceManager;
+        // private SpriteBatch _spriteBatch;
+        
         /// <summary>
         /// Indicates if the game is running on a mobile platform.
         /// </summary>
@@ -75,20 +76,17 @@ namespace TheNewBeginning.Core
         /// </summary>
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // TODO: use this.Content to load your game content here
-            playerTexture = Content.Load<Texture2D>("player");      
+            // Create a new SpriteBatch, which can be used to draw textures.
+            Globals.SpriteBatch = new SpriteBatch(GraphicsDevice);
+            // Make the content manager globally accessible for loading assets in other parts of the game.
+            Globals.Content = Content;
+            // Load any game-specific content here, such as textures, sounds, etc.
+            _gameManager = new GameManager();
             
             base.LoadContent();
         }
 
-        /// <summary>
-        /// Updates the game's logic, called once per frame.
-        /// </summary>
-        /// <param name="gameTime">
-        /// Provides a snapshot of timing values used for game updates.
-        /// </param>
+        
         protected override void Update(GameTime gameTime)
         {
             // Exit the game if the Back button (GamePad) or Escape key (Keyboard) is pressed.
@@ -97,24 +95,22 @@ namespace TheNewBeginning.Core
                 Exit();
 
             // TODO: Add your update logic here
-
+            // Update the global time variable for use in other parts of the game.
+            _gameManager.Update(gameTime);
+            Globals.TotalSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
             base.Update(gameTime);
         }
 
-        /// <summary>
-        /// Draws the game's graphics, called once per frame.
-        /// </summary>
-        /// <param name="gameTime">
-        /// Provides a snapshot of timing values used for rendering.
-        /// </param>
+        
         protected override void Draw(GameTime gameTime)
         {
-            // Clears the screen with the MonoGame orange color before drawing.
+            // Clears the screen with the MonoGame gray color before drawing.
             GraphicsDevice.Clear(Color.Gray);
 
-            _spriteBatch.Begin();
-            _spriteBatch.Draw(playerTexture, new Vector2(0, 0), Color.White);
-            _spriteBatch.End();
+            // Begin the sprite batch, draw the game elements, and end the sprite batch.
+            Globals.SpriteBatch.Begin();
+            _gameManager.Draw(gameTime);
+            Globals.SpriteBatch.End();
 
             base.Draw(gameTime);
         }
