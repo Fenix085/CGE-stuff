@@ -3,9 +3,9 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using MonoGameLibrary.Input;
+using MainEngine.Input;
 
-namespace MonoGameLibrary;
+namespace MainEngine;
 
 public class Core : Game
 {

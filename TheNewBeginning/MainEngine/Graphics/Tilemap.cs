@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace MonoGameLibrary.Graphics;
+namespace MainEngine.Graphics;
 
 public class Tilemap
 {

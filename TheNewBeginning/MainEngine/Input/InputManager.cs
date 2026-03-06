@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 
-namespace MonoGameLibrary.Input;
+namespace MainEngine.Input;
 
 public class InputManager
 {
