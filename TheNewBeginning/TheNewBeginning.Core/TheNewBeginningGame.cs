@@ -19,6 +19,7 @@ public class TheNewBeginningGame : MainEngine.Core
     // Tracks the position of the player.
     private Vector2 _playerPosition;
 
+    private Vector2 _enemyPosition;
     // Speed multiplier when moving.
     private const float MOVEMENT_SPEED = 5.0f;
 
@@ -46,6 +47,9 @@ public class TheNewBeginningGame : MainEngine.Core
         // Create the enemy animated sprite from the atlas.
         _enemy = atlas.CreateAnimatedSprite("enemy-animation");
         _enemy.Scale = new Vector2(4.0f, 4.0f);
+
+        // Set the initial position of the enemy to be 10px to the right of the player.
+        _enemyPosition = new Vector2(_player.Width + 10, 0);
     }
 
     protected override void Update(GameTime gameTime)
@@ -61,6 +65,36 @@ public class TheNewBeginningGame : MainEngine.Core
 
         // Check for gamepad input and handle it.
         CheckGamePadInput();
+
+        // Creating a bounding circle for the player sprite to use for collision checks.
+        Circle playerBounds = new Circle(
+            (int)(_playerPosition.X + (_player.Width * 0.1f)),
+            (int)(_playerPosition.Y + (_player.Height * 0.1f)),
+            (int)(_player.Width * 0.1f)
+        );
+        
+        // Creating a bounding circle for the enemy sprite to use for collision checks.
+        Circle enemyBounds = new Circle(
+            (int)(_enemyPosition.X + (_enemy.Width * 0.1f)),
+            (int)(_enemyPosition.Y + (_enemy.Height * 0.1f)),
+            (int)(_enemy.Width * 0.1f)
+        );
+
+        if (enemyBounds.Intersects(playerBounds))
+        {
+            // Divide the width  and height of the screen into equal columns and
+            // rows based on the width and height of the bat.
+            int totalColumns = GraphicsDevice.PresentationParameters.BackBufferWidth / (int)_player.Width;
+            int totalRows = GraphicsDevice.PresentationParameters.BackBufferHeight / (int)_player.Height;
+
+            // Choose a random row and column based on the total number of each
+            int column = Random.Shared.Next(0, totalColumns);
+            int row = Random.Shared.Next(0, totalRows);
+
+            // Change the bat position by setting the x and y values equal to
+            // the column and row multiplied by the width and height.
+            _playerPosition = new Vector2(column * _player.Width, row * _player.Height);
+        }
 
         base.Update(gameTime);
     }
@@ -165,7 +199,7 @@ public class TheNewBeginningGame : MainEngine.Core
         _player.Draw(SpriteBatch, _playerPosition);
 
         // Draw the enemy sprite 10px to the right of the player.
-        _enemy.Draw(SpriteBatch, new Vector2(_player.Width + 10, 0));
+        _enemy.Draw(SpriteBatch, _enemyPosition);
 
         // Always end the sprite batch when finished.
         SpriteBatch.End();
