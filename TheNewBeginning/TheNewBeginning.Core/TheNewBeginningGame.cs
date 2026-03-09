@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -15,6 +16,11 @@ public class TheNewBeginningGame : MainEngine.Core
 
     // Defines the bat animated sprite.
     private AnimatedSprite _enemy;
+
+    // Agent flock
+    private List<Agent> _agents;
+    private Sprite _agentSprite;
+    private AgentConfig _agentConfig;
 
     // Tracks the position of the player.
     private Vector2 _playerPosition;
@@ -46,6 +52,36 @@ public class TheNewBeginningGame : MainEngine.Core
         // Create the enemy animated sprite from the atlas.
         _enemy = atlas.CreateAnimatedSprite("enemy-animation");
         _enemy.Scale = new Vector2(4.0f, 4.0f);
+
+        // Set up the agent sprite using the first Orc frame.
+        _agentSprite = atlas.CreateSprite("enemy-1");
+        _agentSprite.Scale = new Vector2(3f, 3f);
+        _agentSprite.CenterOrigin();
+
+        // Configure flocking behaviour.
+        _agentConfig = new AgentConfig
+        {
+            AgentSpeed = 65f,
+            RepulsionRadius = 50f,
+            AlignmentRadius = 125f,
+            AttractionRadius = 250f,
+            AttractionAngle = MathHelper.ToRadians(200f),
+            RepulsionForce = 7f,
+            AlignmentForce = 3f,
+            AttractionForce = 1f,
+            GravitationForce = 1f
+        };
+
+        // Spawn agents scattered across the screen.
+        _agents = new List<Agent>();
+        Vector2 center = new Vector2(640, 360);
+        for (int i = 0; i < 30; i++)
+        {
+            Agent agent = new Agent(center);
+            agent.Scatter(1280, 720);
+            agent.Center = center;
+            _agents.Add(agent);
+        }
     }
 
     protected override void Update(GameTime gameTime)
@@ -55,6 +91,12 @@ public class TheNewBeginningGame : MainEngine.Core
 
         // Update the enemy animated sprite.
         _enemy.Update(gameTime);
+
+        // Process agent flocking logic and update positions.
+        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        Agent.Process(_agents, _agentConfig);
+        foreach (var agent in _agents)
+            agent.Update(dt, 1280, 720);
 
         // Check for keyboard input and handle it.
         CheckKeyboardInput();
@@ -166,6 +208,10 @@ public class TheNewBeginningGame : MainEngine.Core
 
         // Draw the enemy sprite 10px to the right of the player.
         _enemy.Draw(SpriteBatch, new Vector2(_player.Width + 10, 0));
+
+        // Draw all agents.
+        foreach (var agent in _agents)
+            agent.Draw(SpriteBatch, _agentSprite);
 
         // Always end the sprite batch when finished.
         SpriteBatch.End();

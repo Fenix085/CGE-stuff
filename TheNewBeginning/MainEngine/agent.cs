@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MainEngine.Graphics;
 
 namespace MainEngine;
 
@@ -113,7 +114,7 @@ public class Agent
             repulsion += r;
         _neighborRepulsion.Clear();
 
-        Velocity += repulsion * config.RepulsionForce;
+        Velocity -= repulsion * config.RepulsionForce;
     }
 
     private void ApplyAlignment(AgentConfig config)
@@ -156,9 +157,16 @@ public class Agent
         ApplyGravity(config);
     }
 
-    public void Update(SpriteBatch spriteBatch, float timeStep, float width, float height)
+    public void Update(float timeStep, float width, float height)
     {
         Move(timeStep, width, height);
+    }
+
+    public void Draw(SpriteBatch spriteBatch, Sprite sprite)
+    {
+        float rotation = MathF.Atan2(Velocity.Y, Velocity.X);
+        sprite.Rotation = rotation;
+        sprite.Draw(spriteBatch, Position);
     }
 
     private void Move(float timeStep, float width, float height)
