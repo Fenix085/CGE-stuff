@@ -19,11 +19,11 @@
     </Animations>
     <Texture>images/Orc</Texture>
     <Regions>
-      <Region name="enemy-1" x="20" y="20" width="50" height="50" />
-        <Region name="enemy-2" x="20" y="20" width="50" height="50" />
-        <Region name="enemy-3" x="20" y="0" width="50" height="50" />
-        <Region name="enemy-4" x="20" y="20" width="50" height="50" />
-        <Region name="enemy-5" x="40" y="0" width="50" height="50" />
+        <Region name="enemy-1" x="0" y="0" width="100" height="100" />
+        <Region name="enemy-2" x="100" y="0" width="100" height="100" />
+        <Region name="enemy-3" x="200" y="0" width="100" height="100" />
+        <Region name="enemy-4" x="300" y="0" width="100" height="100" />
+        <Region name="enemy-5" x="400" y="0" width="100" height="100" />
     </Regions>
     <Animations>
         <Animation name="enemy-animation" delay="200">

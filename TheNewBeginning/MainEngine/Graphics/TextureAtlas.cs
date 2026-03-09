@@ -6,6 +6,7 @@ using System.Xml.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using System.Linq;
 
 namespace MainEngine.Graphics;
 
@@ -20,7 +21,7 @@ public class TextureAtlas
 /// <summary>
 /// Gets or Sets the source texture represented by this texture atlas.
 /// </summary>
-public Texture2D Texture { get; set; }
+public Dictionary<string, Texture2D> Textures { get; } = new();
 
 /// <summary>
 /// Creates a new texture atlas.
@@ -37,21 +38,22 @@ public TextureAtlas()
 /// <param name="texture">The source texture represented by the texture atlas.</param>
 public TextureAtlas(Texture2D texture)
 {
-    Texture = texture;
+    Textures["default"] = texture;
     _regions = new Dictionary<string, TextureRegion>();
     _animations = new Dictionary<string, Animation>();
 }
 /// <summary>
 /// Creates a new region and adds it to this texture atlas.
 /// </summary>
+/// <param name="textureKey">The key of the texture for this region.</param>
 /// <param name="name">The name to give the texture region.</param>
 /// <param name="x">The top-left x-coordinate position of the region boundary relative to the top-left corner of the source texture boundary.</param>
 /// <param name="y">The top-left y-coordinate position of the region boundary relative to the top-left corner of the source texture boundary.</param>
 /// <param name="width">The width, in pixels, of the region.</param>
 /// <param name="height">The height, in pixels, of the region.</param>
-public void AddRegion(string name, int x, int y, int width, int height)
+public void AddRegion(string textureKey, string name, int x, int y, int width, int height)
 {
-    TextureRegion region = new TextureRegion(Texture, x, y, width, height);
+    TextureRegion region = new TextureRegion(Textures[textureKey], x, y, width, height);
     _regions.Add(name, region);
 }
 
@@ -110,8 +112,14 @@ public static TextureAtlas FromFile(ContentManager content, string fileName)
 
             // The <Texture> element contains the content path for the Texture2D to load.
             // So we will retrieve that value then use the content manager to load the texture.
-            string texturePath = root.Element("Texture").Value;
-            atlas.Texture = content.Load<Texture2D>(texturePath);
+            var textureElements = root.Elements("Texture");
+            List<string> texturePaths = new List<string>();
+            foreach (var tex in textureElements)
+            {
+                string texturePath = tex.Value;
+                texturePaths.Add(texturePath);
+                atlas.Textures[texturePath] = content.Load<Texture2D>(texturePath);
+            }
 
             // The <Regions> element contains individual <Region> elements, each one describing
             // a different texture region within the atlas.  
@@ -124,10 +132,11 @@ public static TextureAtlas FromFile(ContentManager content, string fileName)
             //
             // So we retrieve all of the <Region> elements then loop through each one
             // and generate a new TextureRegion instance from it and add it to this atlas.
-            var regions = root.Element("Regions")?.Elements("Region");
-
-            if (regions != null)
+            var regionGroups = root.Elements("Regions").ToArray();
+            for (int i = 0; i < regionGroups.Length; i++)
             {
+                string currentTexture = texturePaths[i];
+                var regions = regionGroups[i].Elements("Region");
                 foreach (var region in regions)
                 {
                     string name = region.Attribute("name")?.Value;
@@ -138,7 +147,7 @@ public static TextureAtlas FromFile(ContentManager content, string fileName)
 
                     if (!string.IsNullOrEmpty(name))
                     {
-                        atlas.AddRegion(name, x, y, width, height);
+                        atlas.AddRegion(currentTexture, name, x, y, width, height);
                     }
                 }
             }
@@ -156,10 +165,10 @@ public static TextureAtlas FromFile(ContentManager content, string fileName)
             //
             // So we retrieve all of the <Animation> elements then loop through each one
             // and generate a new Animation instance from it and add it to this atlas.
-            var animationElements = root.Element("Animations").Elements("Animation");
-
-            if (animationElements != null)
+            var animationGroups = root.Elements("Animations").ToArray();
+            for (int i = 0; i < animationGroups.Length; i++)
             {
+                var animationElements = animationGroups[i].Elements("Animation");
                 foreach (var animationElement in animationElements)
                 {
                     string name = animationElement.Attribute("name")?.Value;

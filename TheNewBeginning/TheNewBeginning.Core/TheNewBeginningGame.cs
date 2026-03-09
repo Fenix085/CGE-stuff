@@ -44,8 +44,8 @@ public class TheNewBeginningGame : MainEngine.Core
         _player.Scale = new Vector2(4.0f, 4.0f);
 
         // Create the enemy animated sprite from the atlas.
-        //_enemy = atlas.CreateAnimatedSprite("enemy-animation");
-        //_enemy.Scale = new Vector2(4.0f, 4.0f);
+        _enemy = atlas.CreateAnimatedSprite("enemy-animation");
+        _enemy.Scale = new Vector2(4.0f, 4.0f);
     }
 
     protected override void Update(GameTime gameTime)
@@ -54,7 +54,7 @@ public class TheNewBeginningGame : MainEngine.Core
         _player.Update(gameTime);
 
         // Update the enemy animated sprite.
-        //_enemy.Update(gameTime);
+        _enemy.Update(gameTime);
 
         // Check for keyboard input and handle it.
         CheckKeyboardInput();
@@ -165,7 +165,7 @@ public class TheNewBeginningGame : MainEngine.Core
         _player.Draw(SpriteBatch, _playerPosition);
 
         // Draw the enemy sprite 10px to the right of the player.
-        //_enemy.Draw(SpriteBatch, new Vector2(_player.Width + 10, 0));
+        _enemy.Draw(SpriteBatch, new Vector2(_player.Width + 10, 0));
 
         // Always end the sprite batch when finished.
         SpriteBatch.End();
