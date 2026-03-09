@@ -8,4 +8,7 @@
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MainEngine\MainEngine.csproj" />
+  </ItemGroup>
 </Project>

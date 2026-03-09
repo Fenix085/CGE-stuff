@@ -1,118 +1,175 @@
 using System;
-using TheNewBeginning.Core.Localization;
-using System.Collections.Generic;
-using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using static System.Net.Mime.MediaTypeNames;
+using MainEngine;
+using MainEngine.Graphics;
+using MainEngine.Input;
 
-namespace TheNewBeginning.Core
+namespace TheNewBeginning.Core;
+
+public class TheNewBeginningGame : MainEngine.Core
 {
-    /// <summary>
-    /// The main class for the game, responsible for managing game components, settings, 
-    /// and platform-specific configurations.
-    /// </summary>
-    
-    
-    public class TheNewBeginningGame : Game
+    // Defines the slime animated sprite.
+    private AnimatedSprite _player;
+
+    // Defines the bat animated sprite.
+    private AnimatedSprite _enemy;
+
+    // Tracks the position of the player.
+    private Vector2 _playerPosition;
+
+    // Speed multiplier when moving.
+    private const float MOVEMENT_SPEED = 5.0f;
+
+    public TheNewBeginningGame() : base("The New Beginning", 1280, 720, false)
     {
-        // Resources for drawing.
-        private GraphicsDeviceManager _graphics;
-        private GameManager _gameManager;
-        // Texture2D playerTexture;
-        // private GraphicsDeviceManager graphicsDeviceManager;
-        // private SpriteBatch _spriteBatch;
-        
-        /// <summary>
-        /// Indicates if the game is running on a mobile platform.
-        /// </summary>
-        public readonly static bool IsMobile = OperatingSystem.IsAndroid() || OperatingSystem.IsIOS();
 
-        /// <summary>
-        /// Indicates if the game is running on a desktop platform.
-        /// </summary>
-        public readonly static bool IsDesktop = OperatingSystem.IsMacOS() || OperatingSystem.IsLinux() || OperatingSystem.IsWindows();
+    }
 
-        /// <summary>
-        /// Initializes a new instance of the game. Configures platform-specific settings, 
-        /// initializes services like settings and leaderboard managers, and sets up the 
-        /// screen manager for screen transitions.
-        /// </summary>
-        public TheNewBeginningGame()
+    protected override void Initialize()
+    {
+        // TODO: Add your initialization logic here
+
+        base.Initialize();
+    }
+
+    protected override void LoadContent()
+    {
+        // Create the texture atlas from the XML configuration file.
+        TextureAtlas atlas = TextureAtlas.FromFile(Content, "images/atlas-definition.xml");
+
+        // Create the player animated sprite from the atlas.
+        _player = atlas.CreateAnimatedSprite("player-animation");
+        _player.Scale = new Vector2(4.0f, 4.0f);
+
+        // Create the enemy animated sprite from the atlas.
+        _enemy = atlas.CreateAnimatedSprite("enemy-animation");
+        _enemy.Scale = new Vector2(4.0f, 4.0f);
+    }
+
+    protected override void Update(GameTime gameTime)
+    {
+        // Update the player animated sprite.
+        _player.Update(gameTime);
+
+        // Update the enemy animated sprite.
+        _enemy.Update(gameTime);
+
+        // Check for keyboard input and handle it.
+        CheckKeyboardInput();
+
+        // Check for gamepad input and handle it.
+        CheckGamePadInput();
+
+        base.Update(gameTime);
+    }
+
+    private void CheckKeyboardInput()
+    {
+        // If the space key is held down, the movement speed increases by 1.5
+        float speed = MOVEMENT_SPEED;
+        if (Input.Keyboard.IsKeyDown(Keys.Space))
         {
-            _graphics = new GraphicsDeviceManager(this);
-        
-            _graphics.PreferredBackBufferWidth = 1280;
-            _graphics.PreferredBackBufferHeight = 720;
-            Content.RootDirectory = "Content";
-            IsMouseVisible = true;
+            speed *= 1.5f;
         }
 
-        /// <summary>
-        /// Initializes the game, including setting up localization and adding the 
-        /// initial screens to the ScreenManager.
-        /// </summary>
-        protected override void Initialize()
+        // If the W or Up keys are down, move the player up on the screen.
+        if (Input.Keyboard.IsKeyDown(Keys.W) || Input.Keyboard.IsKeyDown(Keys.Up))
         {
-            base.Initialize();
+            _playerPosition.Y -= speed;
+        }
 
-            // Load supported languages and set the default language.
-            List<CultureInfo> cultures = LocalizationManager.GetSupportedCultures();
-            var languages = new List<CultureInfo>();
-            for (int i = 0; i < cultures.Count; i++)
+        // if the S or Down keys are down, move the player down on the screen.
+        if (Input.Keyboard.IsKeyDown(Keys.S) || Input.Keyboard.IsKeyDown(Keys.Down))
+        {
+            _playerPosition.Y += speed;
+        }
+
+        // If the A or Left keys are down, move the player left on the screen.
+        if (Input.Keyboard.IsKeyDown(Keys.A) || Input.Keyboard.IsKeyDown(Keys.Left))
+        {
+            _playerPosition.X -= speed;
+        }
+
+        // If the D or Right keys are down, move the player right on the screen.
+        if (Input.Keyboard.IsKeyDown(Keys.D) || Input.Keyboard.IsKeyDown(Keys.Right))
+        {
+            _playerPosition.X += speed;
+        }
+    }
+
+
+    private void CheckGamePadInput()
+    {
+        GamePadInfo gamePadOne = Input.GamePads[(int)PlayerIndex.One];
+
+        // If the A button is held down, the movement speed increases by 1.5
+        // and the gamepad vibrates as feedback to the player.
+        float speed = MOVEMENT_SPEED;
+        if (gamePadOne.IsButtonDown(Buttons.A))
+        {
+            speed *= 1.5f;
+            gamePadOne.SetVibration(1.0f, TimeSpan.FromSeconds(1));
+        }
+        else
+        {
+            gamePadOne.StopVibration();
+        }
+
+        // Check thumbstick first since it has priority over which gamepad input
+        // is movement.  It has priority since the thumbstick values provide a
+        // more granular analog value that can be used for movement.
+        if (gamePadOne.LeftThumbStick != Vector2.Zero)
+        {
+            _playerPosition.X += gamePadOne.LeftThumbStick.X * speed;
+            _playerPosition.Y -= gamePadOne.LeftThumbStick.Y * speed;
+        }
+        else
+        {
+            // If DPadUp is down, move the player up on the screen.
+            if (gamePadOne.IsButtonDown(Buttons.DPadUp))
             {
-                languages.Add(cultures[i]);
+                _playerPosition.Y -= speed;
             }
 
-            // TODO You should load this from a settings file or similar,
-            // based on what the user or operating system selected.
-            var selectedLanguage = LocalizationManager.DEFAULT_CULTURE_CODE;
-            LocalizationManager.SetCulture(selectedLanguage);
+            // If DPadDown is down, move the player down on the screen.
+            if (gamePadOne.IsButtonDown(Buttons.DPadDown))
+            {
+                _playerPosition.Y += speed;
+            }
+
+            // If DPapLeft is down, move the player left on the screen.
+            if (gamePadOne.IsButtonDown(Buttons.DPadLeft))
+            {
+                _playerPosition.X -= speed;
+            }
+
+            // If DPadRight is down, move the player right on the screen.
+            if (gamePadOne.IsButtonDown(Buttons.DPadRight))
+            {
+                _playerPosition.X += speed;
+            }
         }
+    }
 
-        /// <summary>
-        /// Loads game content, such as textures and particle systems.
-        /// </summary>
-        protected override void LoadContent()
-        {
-            // Create a new SpriteBatch, which can be used to draw textures.
-            Globals.SpriteBatch = new SpriteBatch(GraphicsDevice);
-            // Make the content manager globally accessible for loading assets in other parts of the game.
-            Globals.Content = Content;
-            // Load any game-specific content here, such as textures, sounds, etc.
-            _gameManager = new GameManager();
-            
-            base.LoadContent();
-        }
+    protected override void Draw(GameTime gameTime)
+    {
+        // Clear the back buffer.
+        GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        
-        protected override void Update(GameTime gameTime)
-        {
-            // Exit the game if the Back button (GamePad) or Escape key (Keyboard) is pressed.
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed
-                || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+        // Begin the sprite batch to prepare for rendering.
+        SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-            // TODO: Add your update logic here
-            // Update the global time variable for use in other parts of the game.
-            _gameManager.Update(gameTime);
-            Globals.TotalSeconds = (float)gameTime.ElapsedGameTime.TotalSeconds;
-            base.Update(gameTime);
-        }
+        // Draw the player sprite.
+        _player.Draw(SpriteBatch, _playerPosition);
 
-        
-        protected override void Draw(GameTime gameTime)
-        {
-            // Clears the screen with the MonoGame gray color before drawing.
-            GraphicsDevice.Clear(Color.Gray);
+        // Draw the enemy sprite 10px to the right of the player.
+        _enemy.Draw(SpriteBatch, new Vector2(_player.Width + 10, 0));
 
-            // Begin the sprite batch, draw the game elements, and end the sprite batch.
-            Globals.SpriteBatch.Begin();
-            _gameManager.Draw(gameTime);
-            Globals.SpriteBatch.End();
+        // Always end the sprite batch when finished.
+        SpriteBatch.End();
 
-            base.Draw(gameTime);
-        }
+        base.Draw(gameTime);
     }
 }
