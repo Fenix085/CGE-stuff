@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MainEngine.Graphics;
 
-namespace MainEngine;
+namespace MainEngine.FlockEnemy;
 
 public class AgentConfig
 {

@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Input;
 using MainEngine;
 using MainEngine.Graphics;
 using MainEngine.Input;
+using MainEngine.FlockEnemy;
 
 namespace TheNewBeginning.Core;
 
