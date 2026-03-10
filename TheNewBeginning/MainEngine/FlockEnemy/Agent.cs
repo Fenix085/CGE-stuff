@@ -18,6 +18,9 @@ public class AgentConfig
     public float AttractionForce { get; set; } //The forces determine the magnitude of influences. For example, if an agent has another agent in its repulsion zone, its velocity will move away from the other agent with a magnitude of Repulsion force. The force is added every time an agent is encountered, so the more agents, the more force is added.
     public float GravitationForce { get; set; } //determines the force that will be added in the direction of the view center. This makes sure all agents move towards the center, which makes larger groups of agents turn as a whole.
 
+    public bool DebugVisible { get; set; } = false; // when true, draws zone radii and velocity vectors
+    public bool DebugShowRegions { get; set; } = true; // draw repulsion/alignment/attraction circles
+    public bool DebugShowVectors { get; set; } = true; // draw velocity vector
 }
 
 public class Agent
@@ -167,6 +170,61 @@ public class Agent
         float rotation = MathF.Atan2(Velocity.Y, Velocity.X);
         sprite.Rotation = rotation;
         sprite.Draw(spriteBatch, Position);
+    }
+
+    public void DrawDebug(SpriteBatch spriteBatch, AgentConfig config)
+    {
+        if (!config.DebugVisible)
+            return;
+
+        EnsureDebugTexture(spriteBatch.GraphicsDevice);
+
+        if (config.DebugShowRegions)
+        {
+            DrawCircle(spriteBatch, Position, config.RepulsionRadius, Color.Red * 0.5f);
+            DrawCircle(spriteBatch, Position, config.AlignmentRadius, Color.Yellow * 0.5f);
+            DrawCircle(spriteBatch, Position, config.AttractionRadius, Color.Green * 0.5f);
+        }
+
+        if (config.DebugShowVectors)
+        {
+            Vector2 direction = Normalize(Velocity);
+            DrawLine(spriteBatch, Position, Position + direction * 30f, Color.Cyan);
+        }
+    }
+
+    private static Texture2D s_debugPixel;
+
+    private static void EnsureDebugTexture(GraphicsDevice graphicsDevice)
+    {
+        if (s_debugPixel != null)
+            return;
+
+        s_debugPixel = new Texture2D(graphicsDevice, 1, 1);
+        s_debugPixel.SetData(new[] { Color.White });
+    }
+
+    private static void DrawLine(SpriteBatch spriteBatch, Vector2 start, Vector2 end, Color color, float thickness = 1f)
+    {
+        Vector2 delta = end - start;
+        float length = delta.Length();
+        float angle = MathF.Atan2(delta.Y, delta.X);
+
+        spriteBatch.Draw(s_debugPixel, start, null, color, angle, Vector2.Zero, new Vector2(length, thickness), SpriteEffects.None, 0f);
+    }
+
+    private static void DrawCircle(SpriteBatch spriteBatch, Vector2 center, float radius, Color color, int segments = 32)
+    {
+        float step = MathF.PI * 2f / segments;
+        Vector2 prev = center + new Vector2(radius, 0);
+
+        for (int i = 1; i <= segments; i++)
+        {
+            float angle = step * i;
+            Vector2 next = center + new Vector2(MathF.Cos(angle) * radius, MathF.Sin(angle) * radius);
+            DrawLine(spriteBatch, prev, next, color);
+            prev = next;
+        }
     }
 
     private void Move(float timeStep, float width, float height)

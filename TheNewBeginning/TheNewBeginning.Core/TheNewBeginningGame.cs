@@ -67,13 +67,15 @@ public class TheNewBeginningGame : MainEngine.Core
         {
             AgentSpeed = 65f,
             RepulsionRadius = 50f,
-            AlignmentRadius = 125f,
-            AttractionRadius = 250f,
-            AttractionAngle = MathHelper.ToRadians(200f),
+            AlignmentRadius = 80f,
+            AttractionRadius = 175f,
+            AttractionAngle = MathHelper.ToRadians(70f),
             RepulsionForce = 7f,
             AlignmentForce = 3f,
             AttractionForce = 1f,
-            GravitationForce = 1f
+            GravitationForce = 1f,
+            DebugVisible = true
+
         };
 
         // Spawn agents scattered across the screen.
@@ -245,11 +247,10 @@ public class TheNewBeginningGame : MainEngine.Core
 
         // Draw all agents.
         foreach (var agent in _agents)
-            agent.Draw(SpriteBatch, _agentSprite);
-
-        // Draw all agents.
-        foreach (var agent in _agents)
-            agent.Draw(SpriteBatch, _agentSprite);
+            {
+                agent.Draw(SpriteBatch, _agentSprite);
+                agent.DrawDebug(SpriteBatch, _agentConfig);
+            }
 
         // Always end the sprite batch when finished.
         SpriteBatch.End();
