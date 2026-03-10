@@ -11,7 +11,7 @@ public class AgentConfig
     public float AgentSpeed { get; set; } //determines the minimum speed of an agent; an agent that does not experience any influence will move with this speed.
     public float RepulsionRadius { get; set; }
     public float AlignmentRadius { get; set; }
-    public float AttractionRadius { get; set; }//Repulsion, alignment and attraction zone determine the radii of the aforementioned zones. These add up to each other.
+    public float AttractionRadius { get; set; }//Repulsion, alignment and attraction zone determine the radii of the aforementioned zones.
     public float AttractionAngle { get; set; } //determines the angle of an agents field of view in degrees.
     public float RepulsionForce { get; set; }
     public float AlignmentForce { get; set; }
