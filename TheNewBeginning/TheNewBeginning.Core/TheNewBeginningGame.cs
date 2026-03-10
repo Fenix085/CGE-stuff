@@ -67,13 +67,13 @@ public class TheNewBeginningGame : MainEngine.Core
         {
             AgentSpeed = 65f,
             RepulsionRadius = 50f,
-            AlignmentRadius = 80f,
-            AttractionRadius = 175f,
+            AlignmentRadius = 75f,
+            AttractionRadius = 125f,
             AttractionAngle = MathHelper.ToRadians(70f),
             RepulsionForce = 7f,
             AlignmentForce = 3f,
             AttractionForce = 1f,
-            GravitationForce = 1f,
+            GravitationForce = 0.75f,
             DebugVisible = true
 
         };
@@ -248,7 +248,7 @@ public class TheNewBeginningGame : MainEngine.Core
         // Draw all agents.
         foreach (var agent in _agents)
             {
-                agent.Draw(SpriteBatch, _agentSprite);
+                // agent.Draw(SpriteBatch, _agentSprite);
                 agent.DrawDebug(SpriteBatch, _agentConfig);
             }
 
