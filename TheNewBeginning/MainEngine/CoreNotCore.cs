@@ -7,7 +7,7 @@ using MainEngine.Input;
 
 namespace MainEngine;
 
-public class Core : Game
+public class CoreNotCore : Game
 {
     internal static Core s_instance;
 
