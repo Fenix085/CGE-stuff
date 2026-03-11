@@ -3,8 +3,26 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MainEngine.Graphics;
+using System.Diagnostics;
 
 namespace MainEngine.FlockEnemy;
+
+/// A positional force that influences agents within its radius.
+/// Negative force repels agents away; positive force attracts them toward it.
+public struct ForceSource
+{
+    public Vector2 Position;
+    public float Radius;
+    public float Force;
+
+
+    public ForceSource(Vector2 position, float radius, float force)
+    {
+        Position = position;
+        Radius = radius;
+        Force = force;
+    }
+}
 
 public class AgentConfig
 {
@@ -17,7 +35,6 @@ public class AgentConfig
     public float AlignmentForce { get; set; }
     public float AttractionForce { get; set; } //The forces determine the magnitude of influences. For example, if an agent has another agent in its repulsion zone, its velocity will move away from the other agent with a magnitude of Repulsion force. The force is added every time an agent is encountered, so the more agents, the more force is added.
     public float GravitationForce { get; set; } //determines the force that will be added in the direction of the view center. This makes sure all agents move towards the center, which makes larger groups of agents turn as a whole.
-
     public bool DebugVisible { get; set; } = false; // when true, draws zone radii and velocity vectors
     public bool DebugShowRegions { get; set; } = true; // draw repulsion/alignment/attraction circles
     public bool DebugShowVectors { get; set; } = true; // draw velocity vector
@@ -49,10 +66,16 @@ public class Agent
         Velocity = velocity;
     }
 
-    public static void Process(List<Agent> agents, AgentConfig config)
+    public static void Process(List<Agent> agents, AgentConfig config, List<ForceSource> forceSources = null)
     {
         for (int first = 0; first < agents.Count; first++)
         {
+            if (forceSources != null)
+            {
+                for (int i = 0; i < forceSources.Count; i++)
+                    agents[first].ApplyForceSource(forceSources[i]);
+            }
+
             for (int second = first + 1; second < agents.Count; second ++)
                 Interact(agents[first], agents[second], config);
 
@@ -150,7 +173,22 @@ public class Agent
         Velocity += -Normalize(Position - Center) * config.GravitationForce;
     }
 
-    private void React(AgentConfig config)
+    private void ApplyForceSource(ForceSource source)
+    {
+        if (source.Radius <= 0f)
+            return;
+
+        Vector2 delta = Position - source.Position;
+        float distance = delta.Length();
+
+        if (distance >= source.Radius || distance < 0.001f)
+            return;
+
+        float strength = 1f - distance / source.Radius;
+        Velocity -= Normalize(delta) * strength * source.Force;
+    }
+
+    private void React(AgentConfig config, List<ForceSource> sources = null)
     {
         Velocity = Normalize(Velocity) * config.AgentSpeed;
 
@@ -158,6 +196,12 @@ public class Agent
         ApplyAlignment(config);
         ApplyAttraction(config);
         ApplyGravity(config);
+
+        if (sources != null)
+        {
+            foreach (var source in sources)
+                ApplyForceSource(source);
+        }
     }
 
     public void Update(float timeStep, float width, float height)
@@ -190,6 +234,20 @@ public class Agent
         {
             Vector2 direction = Normalize(Velocity);
             DrawLine(spriteBatch, Position, Position + direction * 30f, Color.Cyan);
+        }
+    }
+
+    public static void DrawDebugForceSources(SpriteBatch spriteBatch, List<ForceSource> sources)
+    {
+        if (sources == null)
+            return;
+
+        EnsureDebugTexture(spriteBatch.GraphicsDevice);
+
+        foreach (var source in sources)
+        {
+            Color color = source.Force > 0 ? Color.Blue * 0.4f : Color.Red * 0.4f;
+            DrawCircle(spriteBatch, source.Position, source.Radius, color);
         }
     }
 

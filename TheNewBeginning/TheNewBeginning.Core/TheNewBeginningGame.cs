@@ -22,6 +22,7 @@ public class TheNewBeginningGame : MainEngine.Core
     private List<Agent> _agents;
     private Sprite _agentSprite;
     private AgentConfig _agentConfig;
+    private List<ForceSource> _forceSources;
 
     // Tracks the position of the player.
     private Vector2 _playerPosition;
@@ -50,10 +51,12 @@ public class TheNewBeginningGame : MainEngine.Core
         // Create the player animated sprite from the atlas.
         _player = atlas.CreateAnimatedSprite("player-animation");
         _player.Scale = new Vector2(4.0f, 4.0f);
+        _player.CenterOrigin();
 
         // Create the enemy animated sprite from the atlas.
         _enemy = atlas.CreateAnimatedSprite("enemy-animation");
         _enemy.Scale = new Vector2(4.0f, 4.0f);
+        _enemy.CenterOrigin();
 
         _enemyPosition = new Vector2(_player.Width + 10, 0);
 
@@ -78,6 +81,9 @@ public class TheNewBeginningGame : MainEngine.Core
 
         };
 
+        // Force sources list (rebuilt each frame).
+        _forceSources = new List<ForceSource>();
+
         // Spawn agents scattered across the screen.
         _agents = new List<Agent>();
         Vector2 center = new Vector2(640, 360);
@@ -98,9 +104,16 @@ public class TheNewBeginningGame : MainEngine.Core
         // Update the enemy animated sprite.
         _enemy.Update(gameTime);
 
+        // Build force sources for this frame.
+        _forceSources.Clear();
+        _forceSources.Add(new ForceSource(_playerPosition, 250f, -100f));
+        // Add projectiles, obstacles, lures, etc.:
+        // _forceSources.Add(new ForceSource(projectilePos, 60f, -15f));  // repels
+        // _forceSources.Add(new ForceSource(lurePos, 120f, 5f));       // attracts
+
         // Process agent flocking logic and update positions.
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
-        Agent.Process(_agents, _agentConfig);
+        Agent.Process(_agents, _agentConfig, _forceSources);
         foreach (var agent in _agents)
             agent.Update(dt, 1280, 720);
 
@@ -248,9 +261,11 @@ public class TheNewBeginningGame : MainEngine.Core
         // Draw all agents.
         foreach (var agent in _agents)
             {
-                // agent.Draw(SpriteBatch, _agentSprite);
+                agent.Draw(SpriteBatch, _agentSprite);
                 agent.DrawDebug(SpriteBatch, _agentConfig);
             }
+
+        Agent.DrawDebugForceSources(SpriteBatch, _forceSources);
 
         // Always end the sprite batch when finished.
         SpriteBatch.End();
