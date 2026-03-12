@@ -10,7 +10,7 @@ using MainEngine.FlockEnemy;
 
 namespace TheNewBeginning.Core;
 
-public class TheNewBeginningGame : MainEngine.Core
+public class TheNewBeginningGame : MainEngine.CoreNotCore
 {
     // Defines the slime animated sprite.
     private AnimatedSprite _player;
@@ -23,7 +23,6 @@ public class TheNewBeginningGame : MainEngine.Core
     private Sprite _agentSprite;
     private AgentConfig _agentConfig;
     private List<ForceSource> _forceSources;
-
     // Tracks the position of the player.
     private Vector2 _playerPosition;
 
@@ -80,10 +79,8 @@ public class TheNewBeginningGame : MainEngine.Core
             DebugVisible = true
 
         };
-
         // Force sources list (rebuilt each frame).
         _forceSources = new List<ForceSource>();
-
         // Spawn agents scattered across the screen.
         _agents = new List<Agent>();
         Vector2 center = new Vector2(640, 360);
@@ -110,7 +107,6 @@ public class TheNewBeginningGame : MainEngine.Core
         // Add projectiles, obstacles, lures, etc.:
         // _forceSources.Add(new ForceSource(projectilePos, 60f, -15f));  // repels
         // _forceSources.Add(new ForceSource(lurePos, 120f, 5f));       // attracts
-
         // Process agent flocking logic and update positions.
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         Agent.Process(_agents, _agentConfig, _forceSources);
@@ -264,7 +260,7 @@ public class TheNewBeginningGame : MainEngine.Core
                 agent.Draw(SpriteBatch, _agentSprite);
                 agent.DrawDebug(SpriteBatch, _agentConfig);
             }
-
+        
         Agent.DrawDebugForceSources(SpriteBatch, _forceSources);
 
         // Always end the sprite batch when finished.

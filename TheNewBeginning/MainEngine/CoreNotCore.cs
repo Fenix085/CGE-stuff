@@ -9,12 +9,12 @@ namespace MainEngine;
 
 public class CoreNotCore : Game
 {
-    internal static Core s_instance;
+    internal static CoreNotCore s_instance;
 
     /// <summary>
     /// Gets a reference to the Core instance.
     /// </summary>
-    public static Core Instance => s_instance;
+    public static CoreNotCore Instance => s_instance;
 
     /// <summary>
     /// Gets the graphics device manager to control the presentation of graphics.
@@ -53,7 +53,7 @@ public class CoreNotCore : Game
     /// <param name="width">The initial width, in pixels, of the game window.</param>
     /// <param name="height">The initial height, in pixels, of the game window.</param>
     /// <param name="fullScreen">Indicates if the game should start in fullscreen mode.</param>
-    public Core(string title, int width, int height, bool fullScreen)
+    public CoreNotCore(string title, int width, int height, bool fullScreen)
     {
         // Ensure that multiple cores are not created.
         if (s_instance != null)
