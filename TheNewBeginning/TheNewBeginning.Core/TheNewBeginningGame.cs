@@ -10,7 +10,7 @@ using MainEngine.FlockEnemy;
 
 namespace TheNewBeginning.Core;
 
-public class TheNewBeginningGame : MainEngine.HQ
+public class TheNewBeginningGame : HQ
 {
     // Defines the slime animated sprite.
     private AnimatedSprite _player;

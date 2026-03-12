@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using MainEngine.Graphics;
 
-namespace MainEngine.HQ;
+namespace MainEngine.Core;
 
 public class Camera
 {
