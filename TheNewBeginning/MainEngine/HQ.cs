@@ -7,14 +7,14 @@ using MainEngine.Input;
 
 namespace MainEngine;
 
-public class CoreNotCore : Game
+public class HQ : Game
 {
-    internal static CoreNotCore s_instance;
+    internal static HQ s_instance;
 
     /// <summary>
     /// Gets a reference to the Core instance.
     /// </summary>
-    public static CoreNotCore Instance => s_instance;
+    public static HQ Instance => s_instance;
 
     /// <summary>
     /// Gets the graphics device manager to control the presentation of graphics.
@@ -47,18 +47,18 @@ public class CoreNotCore : Game
     public static bool ExitOnEscape { get; set; }
 
     /// <summary>
-    /// Creates a new Core instance.
+    /// Creates a new Heart instance.
     /// </summary>
     /// <param name="title">The title to display in the title bar of the game window.</param>
     /// <param name="width">The initial width, in pixels, of the game window.</param>
     /// <param name="height">The initial height, in pixels, of the game window.</param>
     /// <param name="fullScreen">Indicates if the game should start in fullscreen mode.</param>
-    public CoreNotCore(string title, int width, int height, bool fullScreen)
+    public HQ(string title, int width, int height, bool fullScreen)
     {
         // Ensure that multiple cores are not created.
         if (s_instance != null)
         {
-            throw new InvalidOperationException($"Only a single Core instance can be created");
+            throw new InvalidOperationException($"Only a single Heart instance can be created");
         }
 
         // Store reference to engine for global member access.
