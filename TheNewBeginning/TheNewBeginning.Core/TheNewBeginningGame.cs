@@ -249,9 +249,11 @@ public class TheNewBeginningGame : HQ
         SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
         // Draw the player sprite.
+        _player.Position = _playerPosition;
         _player.Draw(gameTime, SpriteBatch);
 
         // Draw the enemy sprite 10px to the right of the player.
+        _enemy.Position = _enemyPosition;
         _enemy.Draw(gameTime, SpriteBatch);
 
         // Draw all agents.
