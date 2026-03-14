@@ -7,6 +7,7 @@ using MainEngine;
 using MainEngine.Graphics;
 using MainEngine.Input;
 using MainEngine.FlockEnemy;
+using MainEngine.Camera;
 
 namespace TheNewBeginning.Core;
 
@@ -14,6 +15,8 @@ public class TheNewBeginningGame : HQ
 {
     // Defines the slime animated sprite.
     private AnimatedSprite _player;
+
+    private Camera _camera;
 
     // Defines the bat animated sprite.
     private AnimatedSprite _enemy;
@@ -37,7 +40,7 @@ public class TheNewBeginningGame : HQ
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
+        _camera = new Camera();
 
         base.Initialize();
     }
@@ -118,6 +121,8 @@ public class TheNewBeginningGame : HQ
 
         // Check for gamepad input and handle it.
         CheckGamePadInput();
+
+        _camera.Pos = _playerPosition;
 
         // Creating a bounding circle for the player sprite to use for collision checks.
         Circle playerBounds = new Circle(
@@ -246,7 +251,10 @@ public class TheNewBeginningGame : HQ
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
         // Begin the sprite batch to prepare for rendering.
-        SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        SpriteBatch.Begin(
+        samplerState: SamplerState.PointClamp,
+        transformMatrix: _camera.get_transformation(GraphicsDevice)
+        );
 
         // Draw the player sprite.
         _player.Draw(SpriteBatch, _playerPosition);
