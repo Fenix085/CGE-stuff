@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-
+using MainEngine.Components;
 namespace MainEngine.Graphics;
 
 public class Sprite : Components.Components
@@ -14,7 +14,7 @@ public class Sprite : Components.Components
     }
     public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
     {
-        spriteBatch.Draw(_texture, Position, Color.White);
+        Region.Draw(spriteBatch, Position, Color, Rotation, Origin, Scale, Effects, LayerDepth);
     }
     public Sprite(Texture2D texture)
     {
