@@ -111,7 +111,7 @@ public class TheNewBeginningGame : HQ
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         Agent.Process(_agents, _agentConfig, _forceSources);
         foreach (var agent in _agents)
-            agent.Update(dt, 1280, 720);
+            agent.Update(dt);
 
         // Check for keyboard input and handle it.
         CheckKeyboardInput();
@@ -249,17 +249,17 @@ public class TheNewBeginningGame : HQ
         SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
         // Draw the player sprite.
-        _player.Draw(SpriteBatch, _playerPosition);
+        _player.Draw(gameTime, SpriteBatch);
 
         // Draw the enemy sprite 10px to the right of the player.
-        _enemy.Draw(SpriteBatch, _enemyPosition);
+        _enemy.Draw(gameTime, SpriteBatch);
 
         // Draw all agents.
         foreach (var agent in _agents)
-            {
-                agent.Draw(SpriteBatch, _agentSprite);
-                agent.DrawDebug(SpriteBatch, _agentConfig);
-            }
+        {
+            agent.Draw(SpriteBatch, gameTime, _agentSprite);  // Added gameTime; now matches Agent.Draw signature
+            agent.DrawDebug(SpriteBatch, _agentConfig);
+        }
         
         Agent.DrawDebugForceSources(SpriteBatch, _forceSources);
 

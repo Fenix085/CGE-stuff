@@ -16,6 +16,7 @@ public struct ForceSource
     public float Force;
 
 
+
     public ForceSource(Vector2 position, float radius, float force)
     {
         Position = position;
@@ -42,13 +43,11 @@ public class AgentConfig
 
 public class Agent
 {
-    private const float Length = 16f;
-    private const float Width = 14f;
-    private const float WrapRadius = 16f;
 
     public Vector2 Position;
     public Vector2 Center;
     public Vector2 Velocity;
+
 
     private readonly List<Vector2> _neighborRepulsion = new();
     private readonly List<Vector2> _neighborAlignment = new();
@@ -204,17 +203,25 @@ public class Agent
         }
     }
 
-    public void Update(float timeStep, float width, float height)
+    public void Update(float timeStep)
     {
-        Move(timeStep, width, height);
+        Move(timeStep);
     }
 
-    public void Draw(SpriteBatch spriteBatch, Sprite sprite)
-    {
-        float rotation = MathF.Atan2(Velocity.Y, Velocity.X);
-        sprite.Rotation = rotation;
-        sprite.Draw(spriteBatch, Position);
-    }
+    // filepath: Agent.cs
+// ...existing code...
+
+public void Draw(SpriteBatch spriteBatch, GameTime gameTime, Sprite sprite)
+{
+    float rotation = MathF.Atan2(Velocity.Y, Velocity.X);
+
+    sprite.Rotation = rotation;
+    sprite.Position = Position;
+
+    sprite.Draw(gameTime, spriteBatch);
+}
+
+// ...existing code...
 
     public void DrawDebug(SpriteBatch spriteBatch, AgentConfig config)
     {
@@ -285,7 +292,7 @@ public class Agent
         }
     }
 
-    private void Move(float timeStep, float width, float height)
+    private void Move(float timeStep)
     {
         Position += Velocity * timeStep;
     }
