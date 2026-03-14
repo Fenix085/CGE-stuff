@@ -1,12 +1,11 @@
 using System;
 using Microsoft.Xna.Framework;
-
+using MainEngine.Global;
 namespace MainEngine.Graphics;
 
 public class AnimatedSprite : Sprite 
 {
-    private int _currentFrame;
-private TimeSpan _elapsed;
+private int _currentFrame;
 private Animation _animation;
 
 /// <summary>
@@ -40,13 +39,13 @@ public AnimatedSprite(Animation animation)
 /// Updates this animated sprite.
 /// </summary>
 /// <param name="gameTime">A snapshot of the game timing values provided by the framework.</param>
-public void Update(GameTime gameTime)
+public override void Update(GameTime gameTime)
 {
-    _elapsed += gameTime.ElapsedGameTime;
+    Globals.FixedUpdateRate += gameTime.ElapsedGameTime;
 
-    if (_elapsed >= _animation.Delay)
+    if (Globals.FixedUpdateRate >= _animation.Delay)
     {
-        _elapsed -= _animation.Delay;
+        Globals.FixedUpdateRate -= _animation.Delay;
         _currentFrame++;
 
         if (_currentFrame >= _animation.Frames.Count)
