@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MainEngine.Graphics;
+using System.Diagnostics;
 
-namespace MainEngine.FlockEnemy;
+// namespace MainEngine.FlockEnemy;
 
 /// A positional force that influences agents within its radius.
 /// Negative force repels agents away; positive force attracts them toward it.
@@ -13,6 +14,8 @@ public struct ForceSource
     public Vector2 Position;
     public float Radius;
     public float Force;
+
+
 
     public ForceSource(Vector2 position, float radius, float force)
     {
@@ -40,8 +43,10 @@ public class AgentConfig
 
 public class Agent : Sprite
 {
+
     public Vector2 Center;
     public Vector2 Velocity;
+
 
     private readonly List<Vector2> _neighborRepulsion = new();
     private readonly List<Vector2> _neighborAlignment = new();
@@ -52,19 +57,11 @@ public class Agent : Sprite
     public Agent(Vector2 position)
         : this(position, AngleToVector((float)(s_random.NextDouble() * Math.PI * 2))) { }
 
-    public Agent(Vector2 position, Vector2 velocity) : base()
+    public Agent(Vector2 position, Vector2 velocity)
     {
         Position = position;
         Center = position;
         Velocity = velocity;
-    }
-
-    public Agent(TextureRegion textureRegion, Vector2 startPosition) : base(textureRegion)
-    {
-        Position = startPosition;
-        Center = startPosition;
-        Velocity = Vector2.UnitX;
-        CenterOrigin();
     }
 
     public static void Process(List<Agent> agents, AgentConfig config, List<ForceSource> forceSources = null)
@@ -77,7 +74,7 @@ public class Agent : Sprite
                     agents[first].ApplyForceSource(forceSources[i]);
             }
 
-            for (int second = first + 1; second < agents.Count; second++)
+            for (int second = first + 1; second < agents.Count; second ++)
                 Interact(agents[first], agents[second], config);
 
             agents[first].React(config);
@@ -110,6 +107,8 @@ public class Agent : Sprite
         }
         else if (distance < config.AlignmentRadius)
         {
+            float strength = (distance - config.RepulsionRadius) / (config.AlignmentRadius - config.RepulsionRadius);
+
             first._neighborAlignment.Add(Normalize(second.Velocity));
             second._neighborAlignment.Add(Normalize(first.Velocity));
         }
@@ -133,10 +132,10 @@ public class Agent : Sprite
     {
         if (_neighborRepulsion.Count == 0)
             return;
-
+        
         Vector2 repulsion = Vector2.Zero;
-        foreach (var repulsionVector in _neighborRepulsion)
-            repulsion += repulsionVector;
+        foreach (var r in _neighborRepulsion)
+            repulsion += r;
         _neighborRepulsion.Clear();
 
         Velocity -= repulsion * config.RepulsionForce;
@@ -148,21 +147,20 @@ public class Agent : Sprite
             return;
 
         Vector2 alignment = Vector2.Zero;
-        foreach (var alignmentVector in _neighborAlignment)
-            alignment += alignmentVector;
+        foreach (var a in _neighborAlignment)
+            alignment += a;
         _neighborAlignment.Clear();
 
         Velocity += alignment * config.AlignmentForce;
     }
-
     private void ApplyAttraction(AgentConfig config)
     {
         if (_neighborAttraction.Count == 0)
             return;
 
         Vector2 attraction = Vector2.Zero;
-        foreach (var attractionVector in _neighborAttraction)
-            attraction += attractionVector;
+        foreach (var a in _neighborAttraction)
+            attraction += a;
         _neighborAttraction.Clear();
 
         Velocity += attraction * config.AttractionForce;
@@ -209,32 +207,15 @@ public class Agent : Sprite
         Move(timeStep);
     }
 
-    public override void Update(GameTime gameTime)
-    {
-        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
-        Move(dt);
-    }
+public void Draw(SpriteBatch spriteBatch, GameTime gameTime, Sprite sprite)
+{
+    float rotation = MathF.Atan2(Velocity.Y, Velocity.X);
 
-    public void Draw(SpriteBatch spriteBatch, GameTime gameTime, Sprite sprite)
-    {
-        float rotation = MathF.Atan2(Velocity.Y, Velocity.X);
+    sprite.Rotation = rotation;
+    sprite.Position = Position;
 
-        sprite.Rotation = rotation;
-        sprite.Position = Position;
-
-        sprite.Draw(gameTime, spriteBatch);
-    }
-
-    public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
-    {
-        if (Region == null)
-            return;
-
-        if (Velocity != Vector2.Zero)
-            Rotation = MathF.Atan2(Velocity.Y, Velocity.X);
-
-        base.Draw(gameTime, spriteBatch);
-    }
+    sprite.Draw(gameTime, spriteBatch);
+}
 
     public void DrawDebug(SpriteBatch spriteBatch, AgentConfig config)
     {
@@ -309,11 +290,10 @@ public class Agent : Sprite
     {
         Position += Velocity * timeStep;
     }
-
-    private static Vector2 Normalize(Vector2 vector)
+    private static Vector2 Normalize(Vector2 v)
     {
-        float len = vector.Length();
-        return len > 0 ? vector / len : Vector2.Zero;
+        float len = v.Length();
+        return len > 0 ? v / len : Vector2.Zero;
     }
 
     private static Vector2 AngleToVector(float angle)
