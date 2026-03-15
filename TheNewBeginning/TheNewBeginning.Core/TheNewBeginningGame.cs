@@ -8,6 +8,7 @@ using MainEngine.Graphics;
 using MainEngine.Input;
 using MainEngine.FlockEnemy;
 using MainEngine.Camera;
+using MainEngine.Projectile;
 
 namespace TheNewBeginning.Core;
 
@@ -20,6 +21,9 @@ public class TheNewBeginningGame : HQ
 
     // Defines the bat animated sprite.
     private AnimatedSprite _enemy;
+
+    private List<Projectile> _projectiles = new();
+    private Sprite _projectileSprite;
 
     // Agent flock
     private List<Agent> _agents;
@@ -94,6 +98,9 @@ public class TheNewBeginningGame : HQ
             agent.Center = center;
             _agents.Add(agent);
         }
+        _projectileSprite = atlas.CreateSprite("Arrow");
+        _projectileSprite.Scale = new Vector2(2f);
+        _projectileSprite.CenterOrigin();
     }
 
     protected override void Update(GameTime gameTime)
@@ -116,6 +123,8 @@ public class TheNewBeginningGame : HQ
         foreach (var agent in _agents)
             agent.Update(dt, 1280, 720);
 
+        // Check for mouse input and handle it.
+        CheckMouseInput();
         // Check for keyboard input and handle it.
         CheckKeyboardInput();
 
@@ -154,9 +163,38 @@ public class TheNewBeginningGame : HQ
             _playerPosition = new Vector2(column * _player.Width, row * _player.Height);
         }
 
+        foreach (var projectile in _projectiles)
+        {
+            projectile.Update(dt);
+        }
+        _projectiles.RemoveAll(b => b.IsDead);
+
         base.Update(gameTime);
     }
 
+    private void CheckMouseInput()
+    {
+        if (Input.Mouse.WasButtonJustPressed(MouseButton.Left))
+        {
+            Vector2 mouseScreen = Input.Mouse.Position.ToVector2();
+
+            Vector2 mouseWorld = 
+                Vector2.Transform(
+                    mouseScreen,
+                    Matrix.Invert(_camera.get_transformation(GraphicsDevice))
+                );
+
+            Vector2 direction = mouseWorld - _playerPosition;
+            direction.Normalize();
+
+            Projectile projectile = new Projectile
+            {
+                Position = _playerPosition,
+                Direction = direction
+            };
+            _projectiles.Add(projectile);
+        }
+    }
     private void CheckKeyboardInput()
     {
         // If the space key is held down, the movement speed increases by 1.5
@@ -270,6 +308,11 @@ public class TheNewBeginningGame : HQ
             }
         
         Agent.DrawDebugForceSources(SpriteBatch, _forceSources);
+
+        foreach (var projectile in _projectiles)
+        {
+            projectile.Draw(SpriteBatch, _projectileSprite);
+        }
 
         // Always end the sprite batch when finished.
         SpriteBatch.End();
