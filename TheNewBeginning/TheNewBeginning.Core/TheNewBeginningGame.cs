@@ -10,8 +10,10 @@ using MainEngine.FlockEnemy;
 
 namespace TheNewBeginning.Core;
 
-public class TheNewBeginningGame : HQ
+public class TheNewBeginningGame : Game
 {
+    private GraphicsDeviceManager _graphics;
+    private HQ _hq;
     // Defines the slime animated sprite.
     private AnimatedSprite _player;
 
@@ -30,16 +32,24 @@ public class TheNewBeginningGame : HQ
     // Speed multiplier when moving.
     private const float MOVEMENT_SPEED = 5.0f;
 
-    public TheNewBeginningGame() : base("The New Beginning", 1280, 720, false)
+    public TheNewBeginningGame()
     {
-
+        _graphics = new GraphicsDeviceManager(this);
+        {
+            _graphics.PreferredBackBufferWidth = 1280;
+            _graphics.PreferredBackBufferHeight = 720;
+            _graphics.IsFullScreen = false;
+        };
+        _graphics.ApplyChanges();
+        Content.RootDirectory = "Content";
+        Window.Title = "Some Better Name Here";
+        IsMouseVisible = true;
     }
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
-
         base.Initialize();
+        _hq = new HQ(GraphicsDevice);
     }
 
     protected override void LoadContent()
@@ -95,6 +105,10 @@ public class TheNewBeginningGame : HQ
 
     protected override void Update(GameTime gameTime)
     {
+        _hq.Update(gameTime);
+
+        if (_hq.Input.Keyboard.IsKeyDown(Keys.Escape))
+            Exit();
         // Update the player animated sprite.
         _player.Update(gameTime);
 
@@ -156,31 +170,31 @@ public class TheNewBeginningGame : HQ
     {
         // If the space key is held down, the movement speed increases by 1.5
         float speed = MOVEMENT_SPEED;
-        if (Input.Keyboard.IsKeyDown(Keys.Space))
+        if (_hq.Input.Keyboard.IsKeyDown(Keys.Space))
         {
             speed *= 1.5f;
         }
 
         // If the W or Up keys are down, move the player up on the screen.
-        if (Input.Keyboard.IsKeyDown(Keys.W) || Input.Keyboard.IsKeyDown(Keys.Up))
+        if (_hq.Input.Keyboard.IsKeyDown(Keys.W) || _hq.Input.Keyboard.IsKeyDown(Keys.Up))
         {
             _playerPosition.Y -= speed;
         }
 
         // if the S or Down keys are down, move the player down on the screen.
-        if (Input.Keyboard.IsKeyDown(Keys.S) || Input.Keyboard.IsKeyDown(Keys.Down))
+        if (_hq.Input.Keyboard.IsKeyDown(Keys.S) || _hq.Input.Keyboard.IsKeyDown(Keys.Down))
         {
             _playerPosition.Y += speed;
         }
 
         // If the A or Left keys are down, move the player left on the screen.
-        if (Input.Keyboard.IsKeyDown(Keys.A) || Input.Keyboard.IsKeyDown(Keys.Left))
+        if (_hq.Input.Keyboard.IsKeyDown(Keys.A) || _hq.Input.Keyboard.IsKeyDown(Keys.Left))
         {
             _playerPosition.X -= speed;
         }
 
         // If the D or Right keys are down, move the player right on the screen.
-        if (Input.Keyboard.IsKeyDown(Keys.D) || Input.Keyboard.IsKeyDown(Keys.Right))
+        if (_hq.Input.Keyboard.IsKeyDown(Keys.D) || _hq.Input.Keyboard.IsKeyDown(Keys.Right))
         {
             _playerPosition.X += speed;
         }
@@ -189,7 +203,7 @@ public class TheNewBeginningGame : HQ
 
     private void CheckGamePadInput()
     {
-        GamePadInfo gamePadOne = Input.GamePads[(int)PlayerIndex.One];
+        GamePadInfo gamePadOne = _hq.Input.GamePads[(int)PlayerIndex.One];
 
         // If the A button is held down, the movement speed increases by 1.5
         // and the gamepad vibrates as feedback to the player.
@@ -246,27 +260,27 @@ public class TheNewBeginningGame : HQ
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
         // Begin the sprite batch to prepare for rendering.
-        SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        _hq.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
         // Draw the player sprite.
         _player.Position = _playerPosition;
-        _player.Draw(gameTime, SpriteBatch);
+        _player.Draw(gameTime, _hq.SpriteBatch);
 
         // Draw the enemy sprite 10px to the right of the player.
         _enemy.Position = _enemyPosition;
-        _enemy.Draw(gameTime, SpriteBatch);
+        _enemy.Draw(gameTime, _hq.SpriteBatch);
 
         // Draw all agents.
         foreach (var agent in _agents)
         {
-            agent.Draw(SpriteBatch, gameTime, _agentSprite);  // Added gameTime; now matches Agent.Draw signature
-            agent.DrawDebug(SpriteBatch, _agentConfig);
+            agent.Draw(_hq.SpriteBatch, gameTime, _agentSprite);  // Added gameTime; now matches Agent.Draw signature
+            agent.DrawDebug(_hq.SpriteBatch, _agentConfig);
         }
         
-        Agent.DrawDebugForceSources(SpriteBatch, _forceSources);
+        Agent.DrawDebugForceSources(_hq.SpriteBatch, _forceSources);
 
         // Always end the sprite batch when finished.
-        SpriteBatch.End();
+        _hq.SpriteBatch.End();
 
         base.Draw(gameTime);
     }

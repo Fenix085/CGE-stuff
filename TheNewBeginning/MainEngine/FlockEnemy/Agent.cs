@@ -208,9 +208,6 @@ public class Agent
         Move(timeStep);
     }
 
-    // filepath: Agent.cs
-// ...existing code...
-
 public void Draw(SpriteBatch spriteBatch, GameTime gameTime, Sprite sprite)
 {
     float rotation = MathF.Atan2(Velocity.Y, Velocity.X);
@@ -220,8 +217,6 @@ public void Draw(SpriteBatch spriteBatch, GameTime gameTime, Sprite sprite)
 
     sprite.Draw(gameTime, spriteBatch);
 }
-
-// ...existing code...
 
     public void DrawDebug(SpriteBatch spriteBatch, AgentConfig config)
     {
