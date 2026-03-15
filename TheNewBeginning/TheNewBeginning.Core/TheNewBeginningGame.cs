@@ -17,10 +17,16 @@ public class TheNewBeginningGame : HQ
     // Defines the slime animated sprite.
     private AnimatedSprite _player;
 
+    private Health _playerHP;
+
     private Camera _camera;
 
     // Defines the bat animated sprite.
     private AnimatedSprite _enemy;
+
+    private Health _enemyHP;
+
+    private bool _enemyDead;
 
     private List<Projectile> _projectiles = new();
     private Sprite _projectileSprite;
@@ -45,6 +51,9 @@ public class TheNewBeginningGame : HQ
     protected override void Initialize()
     {
         _camera = new Camera();
+        _playerHP = new Health(3);
+        _enemyHP = new Health(3);
+        _enemyDead = false;
 
         base.Initialize();
     }
@@ -141,14 +150,19 @@ public class TheNewBeginningGame : HQ
         );
         
         // Creating a bounding circle for the enemy sprite to use for collision checks.
-        Circle enemyBounds = new Circle(
+        
+        
+            Circle enemyBounds = new Circle(
             (int)(_enemyPosition.X + (_enemy.Width * 0.1f)),
             (int)(_enemyPosition.Y + (_enemy.Height * 0.1f)),
             (int)(_enemy.Width * 0.1f)
-        );
+            );
+        
+        
 
         if (enemyBounds.Intersects(playerBounds))
         {
+            
             // Divide the width  and height of the screen into equal columns and
             // rows based on the width and height of the bat.
             int totalColumns = GraphicsDevice.PresentationParameters.BackBufferWidth / (int)_player.Width;
@@ -161,14 +175,29 @@ public class TheNewBeginningGame : HQ
             // Change the bat position by setting the x and y values equal to
             // the column and row multiplied by the width and height.
             _playerPosition = new Vector2(column * _player.Width, row * _player.Height);
+            
+            _playerHP.TakeDamage(2);
+            if(_playerHP.IsDead)
+            {
+                Exit();
+            }
         }
 
-        foreach (var projectile in _projectiles)
-        {
-            projectile.Update(dt);
-        }
-        _projectiles.RemoveAll(b => b.IsDead);
+            foreach (var projectile in _projectiles)
+            {
+                projectile.Update(dt);
+                if(projectile.Bounds.Intersects(enemyBounds))
+                {
+                    _enemyHP.TakeDamage(1);
+                    projectile.Hit = true;
+                }
+            }
+            _projectiles.RemoveAll(b => b.IsDead);
 
+            if (_enemyHP.IsDead && !_enemyDead)
+            {
+                _enemyDead = true;
+            }
         base.Update(gameTime);
     }
 
@@ -298,8 +327,11 @@ public class TheNewBeginningGame : HQ
         _player.Draw(SpriteBatch, _playerPosition);
 
         // Draw the enemy sprite 10px to the right of the player.
-        _enemy.Draw(SpriteBatch, _enemyPosition);
-
+        if (!_enemyDead)
+        {
+            _enemy.Draw(SpriteBatch, _enemyPosition);
+        }
+        
         // Draw all agents.
         foreach (var agent in _agents)
             {
@@ -313,6 +345,8 @@ public class TheNewBeginningGame : HQ
         {
             projectile.Draw(SpriteBatch, _projectileSprite);
         }
+
+        
 
         // Always end the sprite batch when finished.
         SpriteBatch.End();

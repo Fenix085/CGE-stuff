@@ -15,7 +15,15 @@ public class Projectile
     public float LifeTime = 2f;
     private float _age = 0f;
 
-    public bool IsDead => _age >= LifeTime;
+    public bool Hit = false;
+
+    public bool IsDead => _age >= LifeTime || Hit;
+
+    public Circle Bounds => new Circle(
+        (int)Position.X,
+        (int)Position.Y,
+        10
+    );
 
     public void Update(float dt)
     {
