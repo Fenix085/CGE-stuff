@@ -4,9 +4,9 @@ using MainEngine.Input;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
-namespace MainEngine;
+namespace MainEngine.Entities;
 
-public class Player
+public class Player : Sprite
 {
     public AnimatedSprite Sprite {get; private set;}
     public Vector2 Position;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
+using MainEngine.Entities;
 using MainEngine;
 using MainEngine.Graphics;
 using MainEngine.Input;
@@ -17,13 +17,7 @@ public class TheNewBeginningGame : HQ
     
     private Player _player;
     private Camera _camera;
-
-    // Defines the bat animated sprite.
-    private AnimatedSprite _enemy;
-
-    private Health _enemyHP;
-
-    private bool _enemyDead;
+    private Enemy _enemy;
 
     private List<Projectile> _projectiles = new();
     private Sprite _projectileSprite;
@@ -34,23 +28,15 @@ public class TheNewBeginningGame : HQ
     private AgentConfig _agentConfig;
     private List<ForceSource> _forceSources;
 
-    private Vector2 _enemyPosition;
-    // Speed multiplier when moving.
-
     public TheNewBeginningGame() : base("The New Beginning", 1280, 720, false)
     {
 
     }
-
     protected override void Initialize()
     {
         _camera = new Camera();
-        _enemyHP = new Health(3);
-        _enemyDead = false;
-
         base.Initialize();
     }
-
     protected override void LoadContent()
     {
         // Create the texture atlas from the XML configuration file.
@@ -64,11 +50,13 @@ public class TheNewBeginningGame : HQ
         _player = new Player(playerSprite, Vector2.Zero, 3);
 
         // Create the enemy animated sprite from the atlas.
-        _enemy = atlas.CreateAnimatedSprite("enemy-animation");
-        _enemy.Scale = new Vector2(4.0f, 4.0f);
-        _enemy.CenterOrigin();
+        AnimatedSprite enemySprite = atlas.CreateAnimatedSprite("enemy-animation");
+        enemySprite.Scale = new Vector2(4f);
+        enemySprite.CenterOrigin();
 
-        _enemyPosition = new Vector2(playerSprite.Width + 10, 0);
+        _enemy = new Enemy(enemySprite, Vector2.Zero, 3);
+
+        _enemy.Position = new Vector2(playerSprite.Width + 10, 0);
 
         // Set up the agent sprite using the first Orc frame.
         _agentSprite = atlas.CreateSprite("enemy-1");
@@ -106,13 +94,10 @@ public class TheNewBeginningGame : HQ
         _projectileSprite.Scale = new Vector2(2f);
         _projectileSprite.CenterOrigin();
     }
-
     protected override void Update(GameTime gameTime)
     {
-        
+        // Update entities sprites.
         _player.Update(gameTime);
-
-        // Update the enemy animated sprite.
         _enemy.Update(gameTime);
 
         // Build force sources for this frame.
@@ -132,25 +117,16 @@ public class TheNewBeginningGame : HQ
 
         _camera.Pos = _player.Position;
 
-        // Creating a bounding circle for the player sprite to use for collision checks.
+        // Creating a bounding circle for entities sprites to use for collision checks.
         Circle playerBounds = _player.GetBounds();
         
-        // Creating a bounding circle for the enemy sprite to use for collision checks.
-        
-        
-            Circle enemyBounds = new Circle(
-            (int)(_enemyPosition.X + (_enemy.Width * 0.1f)),
-            (int)(_enemyPosition.Y + (_enemy.Height * 0.1f)),
-            (int)(_enemy.Width * 0.1f)
-            );
-        
-        
+        Circle enemyBounds = _enemy.GetBounds();
 
         if (enemyBounds.Intersects(_player.GetBounds()))
         {
             
-            // Divide the width  and height of the screen into equal columns and
-            // rows based on the width and height of the enemy.
+            // Divide the width and height of the screen into equal columns and
+            // rows based on the width and height of the player.
             int totalColumns = GraphicsDevice.PresentationParameters.BackBufferWidth / (int)_player.Sprite.Width;
             int totalRows = GraphicsDevice.PresentationParameters.BackBufferHeight / (int)_player.Sprite.Height;
 
@@ -158,7 +134,7 @@ public class TheNewBeginningGame : HQ
             int column = Random.Shared.Next(0, totalColumns);
             int row = Random.Shared.Next(0, totalRows);
 
-            // Change the bat position by setting the x and y values equal to
+            // Change the player position by setting the x and y values equal to
             // the column and row multiplied by the width and height.
             _player.Position = new Vector2(column * _player.Sprite.Width, row * _player.Sprite.Height);
             
@@ -174,19 +150,18 @@ public class TheNewBeginningGame : HQ
                 projectile.Update(dt);
                 if(projectile.Bounds.Intersects(enemyBounds))
                 {
-                    _enemyHP.TakeDamage(1);
+                    _enemy.Health.TakeDamage(1);
                     projectile.Hit = true;
                 }
             }
             _projectiles.RemoveAll(b => b.IsDead);
 
-            if (_enemyHP.IsDead && !_enemyDead)
+            if (_enemy.Health.IsDead && !_enemy.IsDead)
             {
-                _enemyDead = true;
+                _enemy.IsDead = true;
             }
         base.Update(gameTime);
     }
-
     private void CheckMouseInput()
     {
         if (Input.Mouse.WasButtonJustPressed(MouseButton.Left))
@@ -210,8 +185,6 @@ public class TheNewBeginningGame : HQ
             _projectiles.Add(projectile);
         }
     }
-
-
     protected override void Draw(GameTime gameTime)
     {
         // Clear the back buffer.
@@ -227,9 +200,9 @@ public class TheNewBeginningGame : HQ
         _player.Draw(SpriteBatch);
 
         // Draw the enemy sprite 10px to the right of the player.
-        if (!_enemyDead)
+        if (!_enemy.IsDead)
         {
-            _enemy.Draw(SpriteBatch, _enemyPosition);
+            _enemy.Draw(SpriteBatch);
         }
         
         // Draw all agents.
@@ -246,9 +219,7 @@ public class TheNewBeginningGame : HQ
             projectile.Draw(SpriteBatch, _projectileSprite);
         }
 
-        
-
-        // Always end the sprite batch when finished.
+        //End the SpriteBatch
         SpriteBatch.End();
 
         base.Draw(gameTime);
