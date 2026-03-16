@@ -34,4 +34,8 @@
             <Frame region="enemy-5" />
         </Animation>
     </Animations>
+    <Texture>images/Arrow</Texture>
+    <Regions>
+        <Region name="Arrow" x="0" y="0" width="100" height="100" />
+    </Regions>
 </TextureAtlas>

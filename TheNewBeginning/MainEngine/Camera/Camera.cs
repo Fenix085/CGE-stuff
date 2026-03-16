@@ -1,25 +1,58 @@
-// using Microsoft.Xna.Framework;
-// using MainEngine.Graphics;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
-// namespace MainEngine.Camera;
+namespace MainEngine.Camera
+{
+    public class Camera
+    {
+        protected float _zoom; // Camera Zoom
+        public Matrix _transform; // Matrix Transform
+        public Vector2 _pos; // Camera Position
+        protected float _rotation; // Camera Rotation
 
-// public class Camera
-// {
-//     public Matrix Transform { get; private set; }
+        public Camera()
+        {
+            _zoom = 1.0f;
+            _rotation = 0.0f;
+            _pos = Vector2.Zero;
+        }
 
-//     public void Follow(Sprite target)
-//     {
-//         var viewport = MainEngine.HQ.Graphics.GraphicsDevice.Viewport;
 
-//         var offset = Matrix.CreateTranslation(
-//                 viewport.Width / 2,
-//                 viewport.Height / 2,
-//                 0);
+        public float Zoom
+        {
+            get { return _zoom; }
+            set { _zoom = value; /*if (_zoom < 0.1f) _zoom = 0.1f;*/ } // Negative zoom will flip image
+        }
 
-//         var position = Matrix.CreateTranslation(
-//             -target.Position.X - (target.Rectangle.Width / 2),
-//             -target.Position.Y - (target.Rectangle.Height / 2),
-//             0);
-//         Transform = position * offset;
-//     }
-// }
+
+        public float Rotation
+        {
+            get { return _rotation; }
+            set { _rotation = value; }
+        }
+
+
+        // Auxiliary function to move the camera
+        public void Move(Vector2 amount)
+        {
+            _pos += amount;
+        }
+        // Get set position
+        public Vector2 Pos
+        {
+            get { return _pos; }
+            set { _pos = value; }
+        }
+
+
+        public Matrix get_transformation(GraphicsDevice graphicsDevice)
+        {
+            _transform =       
+              Matrix.CreateTranslation(new Vector3(-_pos.X, -_pos.Y, 0)) *
+                                         Matrix.CreateRotationZ(Rotation) *
+                                         Matrix.CreateScale(new Vector3(Zoom, Zoom, 1)) *
+                                         Matrix.CreateTranslation(new Vector3(graphicsDevice.Viewport.Width * 0.5f, graphicsDevice.Viewport.Height * 0.5f, 0));
+            return _transform;
+        }
+    }
+}
