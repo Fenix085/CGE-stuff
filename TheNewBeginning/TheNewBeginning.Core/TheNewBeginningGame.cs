@@ -12,29 +12,40 @@ using MainEngine.Projectile;
 
 namespace TheNewBeginning.Core;
 
-public class TheNewBeginningGame : HQ
+public class TheNewBeginningGame : Game
 {
     
     private Player _player;
     private Camera _camera;
     private Enemy _enemy;
+    private GraphicsDeviceManager _graphics;
+    private HQ _hq;
 
     private List<Projectile> _projectiles = new();
     private Sprite _projectileSprite;
 
     // Agent flock
     private List<Agent> _agents;
-    private Sprite _agentSprite;
     private AgentConfig _agentConfig;
     private List<ForceSource> _forceSources;
 
-    public TheNewBeginningGame() : base("The New Beginning", 1280, 720, false)
+    public TheNewBeginningGame()
     {
-
+        _graphics = new GraphicsDeviceManager(this);
+        {
+            _graphics.PreferredBackBufferWidth = 1280;
+            _graphics.PreferredBackBufferHeight = 720;
+            _graphics.IsFullScreen = false;
+        };
+        _graphics.ApplyChanges();
+        Content.RootDirectory = "Content";
+        Window.Title = "Some Better Name Here";
+        IsMouseVisible = true;
     }
     protected override void Initialize()
     {
         _camera = new Camera();
+        _hq = new HQ(GraphicsDevice);
         base.Initialize();
     }
     protected override void LoadContent()
@@ -59,9 +70,9 @@ public class TheNewBeginningGame : HQ
         _enemy.Position = new Vector2(playerSprite.Width + 10, 0);
 
         // Set up the agent sprite using the first Orc frame.
-        _agentSprite = atlas.CreateSprite("enemy-1");
-        _agentSprite.Scale = new Vector2(3f, 3f);
-        _agentSprite.CenterOrigin();
+        Sprite agentSpriteTemplate = atlas.CreateSprite("enemy-1");
+        agentSpriteTemplate.Scale = new Vector2(3.0f, 3.0f);
+        TextureRegion agentRegion = agentSpriteTemplate.Region;
 
         // Configure flocking behaviour.
         _agentConfig = new AgentConfig
@@ -85,7 +96,8 @@ public class TheNewBeginningGame : HQ
         Vector2 center = new Vector2(640, 360);
         for (int i = 0; i < 30; i++)
         {
-            Agent agent = new Agent(center);
+            Agent agent = new Agent(agentRegion, center);
+            agent.Scale = agentSpriteTemplate.Scale;
             agent.Scatter(1280, 720);
             agent.Center = center;
             _agents.Add(agent);
@@ -96,7 +108,11 @@ public class TheNewBeginningGame : HQ
     }
     protected override void Update(GameTime gameTime)
     {
-        // Update entities sprites.
+        _hq.Update(gameTime);
+
+        if (_hq.Input.Keyboard.IsKeyDown(Keys.Escape))
+            Exit();
+        // Update the player animated sprite.
         _player.Update(gameTime);
         _enemy.Update(gameTime);
 
@@ -107,10 +123,9 @@ public class TheNewBeginningGame : HQ
         // _forceSources.Add(new ForceSource(projectilePos, 60f, -15f));  // repels
         // _forceSources.Add(new ForceSource(lurePos, 120f, 5f));       // attracts
         // Process agent flocking logic and update positions.
-        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         Agent.Process(_agents, _agentConfig, _forceSources);
         foreach (var agent in _agents)
-            agent.Update(dt, 1280, 720);
+            agent.Update(gameTime);
 
         // Check for mouse input and handle it.
         CheckMouseInput();
@@ -191,12 +206,9 @@ public class TheNewBeginningGame : HQ
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
         // Begin the sprite batch to prepare for rendering.
-        SpriteBatch.Begin(
-        samplerState: SamplerState.PointClamp,
-        transformMatrix: _camera.get_transformation(GraphicsDevice)
-        );
+        _hq.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-        // Draw the player sprite.
+       // Draw the player sprite.
         _player.Draw(SpriteBatch);
 
         // Draw the enemy sprite 10px to the right of the player.
@@ -204,23 +216,23 @@ public class TheNewBeginningGame : HQ
         {
             _enemy.Draw(SpriteBatch);
         }
-        
+
         // Draw all agents.
         foreach (var agent in _agents)
-            {
-                agent.Draw(SpriteBatch, _agentSprite);
-                agent.DrawDebug(SpriteBatch, _agentConfig);
-            }
+        {
+            agent.Draw(gameTime, _hq.SpriteBatch);
+            agent.DrawDebug(_hq.SpriteBatch, _agentConfig);
+        }
         
-        Agent.DrawDebugForceSources(SpriteBatch, _forceSources);
+        Agent.DrawDebugForceSources(_hq.SpriteBatch, _forceSources);
 
         foreach (var projectile in _projectiles)
         {
             projectile.Draw(SpriteBatch, _projectileSprite);
         }
 
-        //End the SpriteBatch
-        SpriteBatch.End();
+        // Always end the sprite batch when finished.
+        _hq.SpriteBatch.End();
 
         base.Draw(gameTime);
     }
