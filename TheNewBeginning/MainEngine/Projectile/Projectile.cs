@@ -7,7 +7,7 @@ using System;
 
 namespace MainEngine.Projectile;
 
-public class Projectile
+public class Projectiles
 {
     public Vector2 Position;
     public Vector2 Direction;

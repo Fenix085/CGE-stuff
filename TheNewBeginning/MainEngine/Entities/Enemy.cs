@@ -25,14 +25,13 @@ public class Enemy
 
     }
 
-    public Circle GetBounds()
-    {
-        return new Circle(
+    public Circle Bounds => new Circle
+        (
             (int)(Position.X + Sprite.Width * 0.1f),
             (int)(Position.Y + Sprite.Height * 0.1f),
             (int)(Sprite.Width * 0.1f)
         );
-    }
+    
 
     public void Draw(SpriteBatch spriteBatch)
     {

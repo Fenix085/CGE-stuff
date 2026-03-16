@@ -19,7 +19,7 @@ public class TheNewBeginningGame : HQ
     private Camera _camera;
     private Enemy _enemy;
 
-    private List<Projectile> _projectiles = new();
+    private List<Projectiles> _projectiles = new();
     private Sprite _projectileSprite;
 
     // Agent flock
@@ -116,13 +116,10 @@ public class TheNewBeginningGame : HQ
         CheckMouseInput();
 
         _camera.Pos = _player.Position;
-
-        // Creating a bounding circle for entities sprites to use for collision checks.
-        Circle playerBounds = _player.GetBounds();
         
-        Circle enemyBounds = _enemy.GetBounds();
+        
 
-        if (enemyBounds.Intersects(_player.GetBounds()))
+        if (_enemy.Bounds.Intersects(_player.Bounds))
         {
             
             // Divide the width and height of the screen into equal columns and
@@ -148,7 +145,7 @@ public class TheNewBeginningGame : HQ
             foreach (var projectile in _projectiles)
             {
                 projectile.Update(dt);
-                if(projectile.Bounds.Intersects(enemyBounds))
+                if(projectile.Bounds.Intersects(_enemy.Bounds))
                 {
                     _enemy.Health.TakeDamage(1);
                     projectile.Hit = true;
@@ -163,26 +160,18 @@ public class TheNewBeginningGame : HQ
         base.Update(gameTime);
     }
     private void CheckMouseInput()
-    {
+    {  
         if (Input.Mouse.WasButtonJustPressed(MouseButton.Left))
         {
             Vector2 mouseScreen = Input.Mouse.Position.ToVector2();
 
-            Vector2 mouseWorld = 
+            Vector2 mouseWorld =
                 Vector2.Transform(
                     mouseScreen,
                     Matrix.Invert(_camera.get_transformation(GraphicsDevice))
                 );
 
-            Vector2 direction = mouseWorld - _player.Position;
-            direction.Normalize();
-
-            Projectile projectile = new Projectile
-            {
-                Position = _player.Position,
-                Direction = direction
-            };
-            _projectiles.Add(projectile);
+            _projectiles.Add(_player.Shoot(mouseWorld));
         }
     }
     protected override void Draw(GameTime gameTime)

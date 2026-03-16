@@ -4,9 +4,11 @@ using MainEngine.Input;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using MainEngine.Projectile;
+
 namespace MainEngine.Entities;
 
-public class Player : Sprite
+public class Player
 {
     public AnimatedSprite Sprite {get; private set;}
     public Vector2 Position;
@@ -67,14 +69,24 @@ public class Player : Sprite
         }
     }
 
-    public Circle GetBounds()
+    public Projectiles Shoot(Vector2 target)
     {
-        return new Circle(
+        Vector2 direction = target - Position;
+        direction.Normalize();
+
+        return new Projectiles
+        {
+            Position = Position,
+            Direction = direction
+        };
+    }
+
+    public Circle Bounds => new Circle
+        (
             (int)(Position.X + Sprite.Width * 0.1f),
             (int)(Position.Y + Sprite.Height * 0.1f),
             (int)(Sprite.Width * 0.1f)
         );
-    }
 
     public void Draw(SpriteBatch spriteBatch)
     {
