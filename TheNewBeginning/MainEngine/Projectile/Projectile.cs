@@ -7,9 +7,8 @@ using System;
 
 namespace MainEngine.Projectile;
 
-public class Projectile
+public class Projectile : Sprite
 {
-    public Vector2 Position;
     public Vector2 Direction;
     public float Speed = 500f;
     public float LifeTime = 2f;
@@ -25,15 +24,24 @@ public class Projectile
         10
     );
 
-    public void Update(float dt)
+    public override void Update(GameTime gameTime)
     {
-        Position += Direction * Speed * dt;
-        _age += dt;
+        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        Move(dt);
     }
 
-    public void Draw(SpriteBatch spriteBatch, Sprite sprite)
+    public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
     {
-        sprite.Rotation = MathF.Atan2(Direction.Y,Direction.X);
-        sprite.Draw(spriteBatch, Position);
+        if (Direction != Vector2.Zero)
+            Rotation = MathF.Atan2(Direction.Y, Direction.X);
+
+        base.Draw(gameTime, spriteBatch);
     }
+
+    private void Move(float timeStep)
+    {
+        Position += Direction * Speed * timeStep;
+        _age += timeStep;
+    }
+
 }

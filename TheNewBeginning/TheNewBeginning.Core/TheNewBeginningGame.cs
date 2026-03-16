@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using MainEngine.Entities;
 using MainEngine;
 using MainEngine.Graphics;
@@ -58,7 +59,7 @@ public class TheNewBeginningGame : Game
         playerSprite.Scale = new Vector2(4f);
         playerSprite.CenterOrigin();
 
-        _player = new Player(playerSprite, Vector2.Zero, 3);
+        _player = new Player(_hq, playerSprite, Vector2.Zero, 3);
 
         // Create the enemy animated sprite from the atlas.
         AnimatedSprite enemySprite = atlas.CreateAnimatedSprite("enemy-animation");
@@ -127,17 +128,18 @@ public class TheNewBeginningGame : Game
         foreach (var agent in _agents)
             agent.Update(gameTime);
 
+        _camera.Pos = _player.Position;
+        
         // Check for mouse input and handle it.
         CheckMouseInput();
 
-        _camera.Pos = _player.Position;
+
 
         // Creating a bounding circle for entities sprites to use for collision checks.
         Circle playerBounds = _player.GetBounds();
-        
         Circle enemyBounds = _enemy.GetBounds();
 
-        if (enemyBounds.Intersects(_player.GetBounds()))
+        if (enemyBounds.Intersects(playerBounds))
         {
             
             // Divide the width and height of the screen into equal columns and
@@ -162,7 +164,7 @@ public class TheNewBeginningGame : Game
 
             foreach (var projectile in _projectiles)
             {
-                projectile.Update(dt);
+                projectile.Update(gameTime);
                 if(projectile.Bounds.Intersects(enemyBounds))
                 {
                     _enemy.Health.TakeDamage(1);
@@ -179,9 +181,9 @@ public class TheNewBeginningGame : Game
     }
     private void CheckMouseInput()
     {
-        if (Input.Mouse.WasButtonJustPressed(MouseButton.Left))
+        if (_hq.Input.Mouse.WasButtonJustPressed(MouseButton.Left))
         {
-            Vector2 mouseScreen = Input.Mouse.Position.ToVector2();
+            Vector2 mouseScreen = _hq.Input.Mouse.Position.ToVector2();
 
             Vector2 mouseWorld = 
                 Vector2.Transform(
@@ -195,7 +197,10 @@ public class TheNewBeginningGame : Game
             Projectile projectile = new Projectile
             {
                 Position = _player.Position,
-                Direction = direction
+                Direction = direction,
+                Region = _projectileSprite.Region,
+                Scale = _projectileSprite.Scale,
+                Origin = _projectileSprite.Origin
             };
             _projectiles.Add(projectile);
         }
@@ -206,15 +211,15 @@ public class TheNewBeginningGame : Game
         GraphicsDevice.Clear(Color.CornflowerBlue);
 
         // Begin the sprite batch to prepare for rendering.
-        _hq.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        _hq.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: _camera.get_transformation(GraphicsDevice));
 
-       // Draw the player sprite.
-        _player.Draw(SpriteBatch);
+        // Draw the player sprite.
+        _player.Draw(gameTime, _hq.SpriteBatch);
 
         // Draw the enemy sprite 10px to the right of the player.
         if (!_enemy.IsDead)
         {
-            _enemy.Draw(SpriteBatch);
+            _enemy.Draw(gameTime, _hq.SpriteBatch);
         }
 
         // Draw all agents.
@@ -228,7 +233,7 @@ public class TheNewBeginningGame : Game
 
         foreach (var projectile in _projectiles)
         {
-            projectile.Draw(SpriteBatch, _projectileSprite);
+            projectile.Draw(gameTime, _hq.SpriteBatch);
         }
 
         // Always end the sprite batch when finished.

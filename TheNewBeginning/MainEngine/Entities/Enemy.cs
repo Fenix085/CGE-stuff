@@ -4,38 +4,39 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace MainEngine.Entities;
 
-public class Enemy
+public class Enemy : Sprite
 {
-    public AnimatedSprite Sprite {get; private set;}
-    public Vector2 Position;
+    public AnimatedSprite Sprite { get; private set; }
     public Health Health;
     public bool IsDead = false;
     public const float MOVEMENT_SPEED = 3f;
 
-    public Enemy(AnimatedSprite sprite,Vector2 position, int hp)
+    public Enemy(AnimatedSprite sprite, Vector2 position, int hp)
     {
         Sprite = sprite;
         Position = position;
         Health = new Health(hp);
     }
 
-    public void Update(GameTime gameTime)
+    public override void Update(GameTime gameTime)
     {
         Sprite.Update(gameTime);
-
     }
+
+    public Circle Bounds => new Circle(
+        (int)(Position.X + Sprite.Width * 0.1f),
+        (int)(Position.Y + Sprite.Height * 0.1f),
+        (int)(Sprite.Width * 0.1f)
+    );
 
     public Circle GetBounds()
     {
-        return new Circle(
-            (int)(Position.X + Sprite.Width * 0.1f),
-            (int)(Position.Y + Sprite.Height * 0.1f),
-            (int)(Sprite.Width * 0.1f)
-        );
+        return Bounds;
     }
 
-    public void Draw(SpriteBatch spriteBatch)
+    public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
     {
-        Sprite.Draw(spriteBatch, Position);
+        Sprite.Position = Position;
+        Sprite.Draw(gameTime, spriteBatch);
     }
 }
