@@ -22,7 +22,6 @@ public class TheNewBeginningGame : Game
 
     // Agent flock
     private List<Agent> _agents;
-    private Sprite _agentSprite;
     private AgentConfig _agentConfig;
     private List<ForceSource> _forceSources;
     // Tracks the position of the player.
@@ -70,9 +69,9 @@ public class TheNewBeginningGame : Game
         _enemyPosition = new Vector2(_player.Width + 10, 0);
 
         // Set up the agent sprite using the first Orc frame.
-        _agentSprite = atlas.CreateSprite("enemy-1");
-        _agentSprite.Scale = new Vector2(3f, 3f);
-        _agentSprite.CenterOrigin();
+        Sprite agentSpriteTemplate = atlas.CreateSprite("enemy-1");
+        agentSpriteTemplate.Scale = new Vector2(3.0f, 3.0f);
+        TextureRegion agentRegion = agentSpriteTemplate.Region;
 
         // Configure flocking behaviour.
         _agentConfig = new AgentConfig
@@ -96,7 +95,8 @@ public class TheNewBeginningGame : Game
         Vector2 center = new Vector2(640, 360);
         for (int i = 0; i < 30; i++)
         {
-            Agent agent = new Agent(center);
+            Agent agent = new Agent(agentRegion, center);
+            agent.Scale = agentSpriteTemplate.Scale;
             agent.Scatter(1280, 720);
             agent.Center = center;
             _agents.Add(agent);
@@ -122,10 +122,9 @@ public class TheNewBeginningGame : Game
         // _forceSources.Add(new ForceSource(projectilePos, 60f, -15f));  // repels
         // _forceSources.Add(new ForceSource(lurePos, 120f, 5f));       // attracts
         // Process agent flocking logic and update positions.
-        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         Agent.Process(_agents, _agentConfig, _forceSources);
         foreach (var agent in _agents)
-            agent.Update(dt);
+            agent.Update(gameTime);
 
         // Check for keyboard input and handle it.
         CheckKeyboardInput();
@@ -273,7 +272,7 @@ public class TheNewBeginningGame : Game
         // Draw all agents.
         foreach (var agent in _agents)
         {
-            agent.Draw(_hq.SpriteBatch, gameTime, _agentSprite);  // Added gameTime; now matches Agent.Draw signature
+            agent.Draw(gameTime, _hq.SpriteBatch);
             agent.DrawDebug(_hq.SpriteBatch, _agentConfig);
         }
         

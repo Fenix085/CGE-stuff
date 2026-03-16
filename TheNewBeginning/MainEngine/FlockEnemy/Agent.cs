@@ -204,25 +204,10 @@ public class Agent : Sprite
         }
     }
 
-    public void Update(float timeStep)
-    {
-        Move(timeStep);
-    }
-
     public override void Update(GameTime gameTime)
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         Move(dt);
-    }
-
-    public void Draw(SpriteBatch spriteBatch, GameTime gameTime, Sprite sprite)
-    {
-        float rotation = MathF.Atan2(Velocity.Y, Velocity.X);
-
-        sprite.Rotation = rotation;
-        sprite.Position = Position;
-
-        sprite.Draw(gameTime, spriteBatch);
     }
 
     public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
