@@ -117,8 +117,6 @@ public class TheNewBeginningGame : HQ
 
         _camera.Pos = _player.Position;
         
-        
-
         if (_enemy.Bounds.Intersects(_player.Bounds))
         {
             

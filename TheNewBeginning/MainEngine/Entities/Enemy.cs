@@ -32,7 +32,6 @@ public class Enemy
             (int)(Sprite.Width * 0.1f)
         );
     
-
     public void Draw(SpriteBatch spriteBatch)
     {
         Sprite.Draw(spriteBatch, Position);
