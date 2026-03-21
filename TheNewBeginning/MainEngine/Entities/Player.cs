@@ -11,11 +11,9 @@ public class Player : Sprite
     public AnimatedSprite Sprite { get; private set; }
     public Health Health;
     public const float MOVEMENT_SPEED = 5f;
-    private readonly HQ _hq;
 
-    public Player(HQ hq, AnimatedSprite sprite, Vector2 position, int hp)
+    public Player(AnimatedSprite sprite, Vector2 position, int hp)
     {
-        hq = _hq;
         Sprite = sprite;
         Position = position;
         Health = new Health(hp);

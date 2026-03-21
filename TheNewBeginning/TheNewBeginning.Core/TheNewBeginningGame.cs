@@ -1,12 +1,15 @@
 using MainEngine.Scenes;
 using Microsoft.Xna.Framework.Media;
 using MainEngine;
+using TheNewBeginning.Scenes;
 
-namespace TheNewBeginning;
+namespace TheNewBeginning.Core;
 
 public class TheNewBeginningGame : HQ
 {
-     protected override void Initialize()
+    public TheNewBeginningGame() : base("The New Beginning", 1280, 720, false) { }
+
+    protected override void Initialize()
     {
         base.Initialize();
 
@@ -16,6 +19,6 @@ public class TheNewBeginningGame : HQ
 
     protected override void LoadContent()
     {
-        
+
     }
 }

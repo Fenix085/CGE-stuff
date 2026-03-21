@@ -9,7 +9,7 @@ using MainEngine.Scenes;
 
 namespace MainEngine;
 
-public class HQ 
+public class HQ : Game
 {
     internal static HQ s_instance;
 

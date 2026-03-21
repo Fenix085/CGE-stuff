@@ -19,8 +19,6 @@ public class GameScene : Scene
     private Player _player;
     private Camera _camera;
     private Enemy _enemy;
-    private GraphicsDeviceManager _graphics;
-    private HQ _hq;
 
     private List<Projectile> _projectiles = new();
     private Sprite _projectileSprite;
@@ -29,20 +27,6 @@ public class GameScene : Scene
     private List<Agent> _agents;
     private AgentConfig _agentConfig;
     private List<ForceSource> _forceSources;
-
-    public TheNewBeginningGame()
-    {
-        _graphics = new GraphicsDeviceManager(this);
-        {
-            _graphics.PreferredBackBufferWidth = 1280;
-            _graphics.PreferredBackBufferHeight = 720;
-            _graphics.IsFullScreen = false;
-        };
-        _graphics.ApplyChanges();
-        Content.RootDirectory = "Content";
-        Window.Title = "Some Better Name Here";
-        IsMouseVisible = true;
-    }
     public override void Initialize()
     {
         _camera = new Camera();
@@ -58,7 +42,7 @@ public class GameScene : Scene
         playerSprite.Scale = new Vector2(4f);
         playerSprite.CenterOrigin();
 
-        _player = new Player(_hq, playerSprite, Vector2.Zero, 3);
+        _player = new Player(playerSprite, Vector2.Zero, 3);
 
         // Create the enemy animated sprite from the atlas.
         AnimatedSprite enemySprite = atlas.CreateAnimatedSprite("enemy-animation");
@@ -108,10 +92,8 @@ public class GameScene : Scene
     }
     public override void Update(GameTime gameTime)
     {
-        Update(gameTime);
-
         if (HQ.Input.Keyboard.IsKeyDown(Keys.Escape))
-            Exit();
+            HQ.Instance.Exit();
         // Update the player animated sprite.
         _player.Update(gameTime);
         _enemy.Update(gameTime);
@@ -157,7 +139,7 @@ public class GameScene : Scene
             _player.Health.TakeDamage(2);
             if(_player.Health.IsDead)
             {
-                Exit();
+                HQ.Instance.Exit();
             }
         }
 
@@ -210,7 +192,7 @@ public class GameScene : Scene
         HQ.GraphicsDevice.Clear(Color.CornflowerBlue);
 
         // Begin the sprite batch to prepare for rendering.
-        HQ.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: _camera.get_transformation(GraphicsDevice));
+        HQ.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: _camera.get_transformation(HQ.GraphicsDevice));
 
         // Draw the player sprite.
         _player.Draw(gameTime, HQ.SpriteBatch);
