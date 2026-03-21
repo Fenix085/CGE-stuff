@@ -43,10 +43,14 @@ public class Enemy : Sprite
 
     #endregion
 
+    public override void ApplyDeath()
+    {
+        IsDead = true;
+    }
 
     public Circle GetBounds()
     {
-        return Bounds;
+        return IsDead ? Circle.Empty : Bounds;
     }
 
     public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)

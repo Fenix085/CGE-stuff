@@ -35,6 +35,11 @@ public AnimatedSprite(Animation animation)
     Animation = animation;
 }
 
+public override void ApplyDeath()
+{
+    // AnimatedSprite death logic here (e.g., play death animation, remove from game, etc.)
+}
+
 /// <summary>
 /// Updates this animated sprite.
 /// </summary>

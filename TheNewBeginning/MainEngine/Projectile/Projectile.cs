@@ -24,6 +24,11 @@ public class Projectile : Sprite
         10
     );
 
+    public override void ApplyDeath()
+    {
+        // Projectile death logic here (e.g., spawn explosion, play sound, etc.)
+    }
+
     public override void Update(GameTime gameTime)
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;

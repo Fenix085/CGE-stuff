@@ -208,7 +208,7 @@ public static TextureAtlas FromFile(ContentManager content, string fileName)
 public Sprite CreateSprite(string regionName)
 {
     TextureRegion region = GetRegion(regionName);
-    return new Sprite(region);
+    return new AtlasSprite(region);
 }
 
 /// <summary>

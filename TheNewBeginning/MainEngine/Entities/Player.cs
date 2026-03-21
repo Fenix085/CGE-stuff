@@ -90,6 +90,11 @@ public class Player : Sprite
         );
     }
 
+    public override void ApplyDeath()
+    {
+        // Player death logic here (e.g., respawn, game over screen, etc.)
+    }
+
     public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
     {
         Sprite.Position = Position;

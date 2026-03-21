@@ -1,10 +1,8 @@
-using System.ComponentModel;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MainEngine.Components;
 namespace MainEngine.Graphics;
 
-public class Sprite : Components.Components
+public abstract class Sprite : Components.Components
 {
     protected Texture2D _texture;
     public Vector2 Position { get; set; }
@@ -12,6 +10,9 @@ public class Sprite : Components.Components
     {
         get{ return new Rectangle((int)Position.X, (int)Position.Y, _texture.Width, _texture.Height); }
     }
+
+    public abstract void ApplyDeath();
+
     public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
     {
         Region.Draw(spriteBatch, Position, Color, Rotation, Origin, Scale, Effects, LayerDepth);

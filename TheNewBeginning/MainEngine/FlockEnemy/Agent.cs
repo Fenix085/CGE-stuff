@@ -204,6 +204,11 @@ public class Agent : Sprite
         }
     }
 
+    public override void ApplyDeath()
+    {
+        // Agent death logic here
+    }
+
     public override void Update(GameTime gameTime)
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;

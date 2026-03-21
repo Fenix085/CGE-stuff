@@ -139,37 +139,36 @@ public class TheNewBeginningGame : Game
 
 
 
-        // Creating a bounding circle for entities sprites to use for collision checks.
+        // Creating bounding circles for collision checks.
         Circle playerBounds = _player.GetBounds();
-        Circle enemyBounds = _enemy.GetBounds();
 
-        if (enemyBounds.Intersects(playerBounds))
+        Circle enemyBounds = Circle.Empty;
+        if (!_enemy.IsDead)
         {
-            
-            // Divide the width and height of the screen into equal columns and
-            // rows based on the width and height of the player.
-            int totalColumns = GraphicsDevice.PresentationParameters.BackBufferWidth / (int)_player.Sprite.Width;
-            int totalRows = GraphicsDevice.PresentationParameters.BackBufferHeight / (int)_player.Sprite.Height;
+            enemyBounds = _enemy.GetBounds();
 
-            // Choose a random row and column based on the total number of each
-            int column = Random.Shared.Next(0, totalColumns);
-            int row = Random.Shared.Next(0, totalRows);
-
-            // Change the player position by setting the x and y values equal to
-            // the column and row multiplied by the width and height.
-            _player.Position = new Vector2(column * _player.Sprite.Width, row * _player.Sprite.Height);
-            
-            _player.Health.TakeDamage(2);
-            if(_player.Health.IsDead)
+            if (enemyBounds.Intersects(playerBounds))
             {
-                Exit();
+                int totalColumns = GraphicsDevice.PresentationParameters.BackBufferWidth / (int)_player.Sprite.Width;
+                int totalRows = GraphicsDevice.PresentationParameters.BackBufferHeight / (int)_player.Sprite.Height;
+
+                int column = Random.Shared.Next(0, totalColumns);
+                int row = Random.Shared.Next(0, totalRows);
+
+                _player.Position = new Vector2(column * _player.Sprite.Width, row * _player.Sprite.Height);
+
+                _player.Health.TakeDamage(2);
+                if (_player.Health.IsDead)
+                {
+                    Exit();
+                }
             }
         }
 
             foreach (var projectile in _projectiles)
             {
                 projectile.Update(gameTime);
-                if(projectile.Bounds.Intersects(enemyBounds))
+                if (!_enemy.IsDead && projectile.Bounds.Intersects(enemyBounds))
                 {
                     _enemy.Health.TakeDamage(1);
                     projectile.Hit = true;
@@ -179,7 +178,7 @@ public class TheNewBeginningGame : Game
 
             if (_enemy.Health.IsDead && !_enemy.IsDead)
             {
-                _enemy.IsDead = true;
+                _enemy.ApplyDeath();
             }
         base.Update(gameTime);
     }
