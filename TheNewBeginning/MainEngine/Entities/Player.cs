@@ -15,7 +15,7 @@ public class Player : Sprite
 
     public Player(HQ hq, AnimatedSprite sprite, Vector2 position, int hp)
     {
-        _hq = hq;
+        hq = _hq;
         Sprite = sprite;
         Position = position;
         Health = new Health(hp);
@@ -37,19 +37,19 @@ public class Player : Sprite
         float speed = MOVEMENT_SPEED;
         Vector2 pos = Position;
 
-        if (_hq.Input.Keyboard.IsKeyDown(Keys.Space))
+        if (HQ.Input.Keyboard.IsKeyDown(Keys.Space))
             speed *= 1.5f;
 
-        if (_hq.Input.Keyboard.IsKeyDown(Keys.W) || _hq.Input.Keyboard.IsKeyDown(Keys.Up))
+        if (HQ.Input.Keyboard.IsKeyDown(Keys.W) || HQ.Input.Keyboard.IsKeyDown(Keys.Up))
             pos.Y -= speed;
 
-        if (_hq.Input.Keyboard.IsKeyDown(Keys.S) || _hq.Input.Keyboard.IsKeyDown(Keys.Down))
+        if (HQ.Input.Keyboard.IsKeyDown(Keys.S) || HQ.Input.Keyboard.IsKeyDown(Keys.Down))
             pos.Y += speed;
 
-        if (_hq.Input.Keyboard.IsKeyDown(Keys.A) || _hq.Input.Keyboard.IsKeyDown(Keys.Left))
+        if (HQ.Input.Keyboard.IsKeyDown(Keys.A) || HQ.Input.Keyboard.IsKeyDown(Keys.Left))
             pos.X -= speed;
 
-        if (_hq.Input.Keyboard.IsKeyDown(Keys.D) || _hq.Input.Keyboard.IsKeyDown(Keys.Right))
+        if (HQ.Input.Keyboard.IsKeyDown(Keys.D) || HQ.Input.Keyboard.IsKeyDown(Keys.Right))
             pos.X += speed;
 
         Position = pos;
@@ -57,7 +57,7 @@ public class Player : Sprite
 
     private void HandleGamepad()
     {
-        GamePadInfo pad = _hq.Input.GamePads[(int)PlayerIndex.One];
+        GamePadInfo pad = HQ.Input.GamePads[(int)PlayerIndex.One];
 
         float speed = MOVEMENT_SPEED;
         Vector2 pos = Position;
