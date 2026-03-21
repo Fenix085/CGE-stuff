@@ -116,6 +116,10 @@ public class TheNewBeginningGame : Game
         // Update the player animated sprite.
         _player.Update(gameTime);
         _enemy.Update(gameTime);
+        if (!_enemy.IsDead)
+        {
+            _enemy.MoveToward(_player.Position);
+        }
 
         // Build force sources for this frame.
         _forceSources.Clear();

@@ -29,6 +29,21 @@ public class Enemy : Sprite
         (int)(Sprite.Width * 0.1f)
     );
 
+    #region Moving
+
+    public void MoveToward(Vector2 targetPosition)
+    {
+        Vector2 direction = targetPosition - Position;
+        if (direction != Vector2.Zero)
+        {
+            direction.Normalize();
+            Position += direction * MOVEMENT_SPEED;
+        }
+    }
+
+    #endregion
+
+
     public Circle GetBounds()
     {
         return Bounds;
