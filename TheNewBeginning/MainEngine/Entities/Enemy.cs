@@ -10,6 +10,7 @@ public class Enemy : Sprite
     public Health Health;
     public bool IsDead = false;
     public const float MOVEMENT_SPEED = 3f;
+    public const float DETECTION_RADIUS = 200f;
 
     public Enemy(AnimatedSprite sprite, Vector2 position, int hp)
     {
@@ -34,6 +35,8 @@ public class Enemy : Sprite
     public void MoveToward(Vector2 targetPosition)
     {
         Vector2 direction = targetPosition - Position;
+        if (direction.Length() > DETECTION_RADIUS)
+            return;
         if (direction != Vector2.Zero)
         {
             direction.Normalize();
