@@ -148,7 +148,8 @@ public class TheNewBeginningGame : Game
         // Check for mouse input and handle it.
         CheckMouseInput();
 
-
+        foreach (var projectile in _projectiles)
+            projectile.Update(gameTime);
 
         // Creating bounding circles for collision checks.
         Circle playerBounds = _player.GetBounds();
