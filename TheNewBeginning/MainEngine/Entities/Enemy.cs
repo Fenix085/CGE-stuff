@@ -10,7 +10,7 @@ public class Enemy : Sprite
     public Health Health;
     public bool IsDead = false;
     public const float MOVEMENT_SPEED = 3f;
-    public const float DETECTION_RADIUS = 200f;
+    public const float DETECTION_RADIUS = 300f;
 
     public Enemy(AnimatedSprite sprite, Vector2 position, int hp)
     {
