@@ -89,9 +89,9 @@ public class TheNewBeginningGame : Game
                 AttractionRadius = 200f,
                 AttractionAngle = MathHelper.ToRadians(70f),
                 RepulsionForce = 10f,
-                AlignmentForce = 3f,
-                AttractionForce = 1f,
-                GravitationForce = 0.05f,
+                AlignmentForce = 5f,
+                AttractionForce = 2f,
+                GravitationForce = 0.07f,
                 DebugVisible = true
             };
 
@@ -122,18 +122,33 @@ public class TheNewBeginningGame : Game
         // Update the player animated sprite.
         _player.Update(gameTime);
 
+        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        const float leaderActiveSpeed = 90f;
+
         foreach ( var group in _enemyFlocks)
         {
             group.Enemy.Update(gameTime);
             if (!group.Enemy.IsDead)
-                group.Enemy.MoveToward(_player.Position);
+                group.Enemy.MoveToward(_player.Position, dt, leaderActiveSpeed);
+
+            if (group.Enemy.CurrentSpeed <= 0f && !group.Enemy.IsDead)
+            {
+                group.Config.AgentSpeed = 20f;
+            }else if (group.Enemy.IsDead)
+            {
+                group.Config.AgentSpeed = 0f;
+            }else
+            {
+                group.Config.AgentSpeed = leaderActiveSpeed + 20f;
+            }
 
             group.ForceSources.Clear();
-            group.ForceSources.Add(new ForceSource(_player.Position, 150f, -70f));
+            group.ForceSources.Add(new ForceSource(_player.Position, 100f, -70f));
             if (!group.Enemy.IsDead)
             {
-                group.ForceSources.Add(new ForceSource(group.Enemy.Position, 260f, 45f));
-                group.ForceSources.Add(new ForceSource(group.Enemy.Position, 90f, -90f));
+                group.ForceSources.Add(new ForceSource(group.Enemy.Position, 275f, 30f));
+                group.ForceSources.Add(new ForceSource(group.Enemy.Position, 100f, -90f));
             }
             foreach (var agent in group.Agents)
                 agent.Center = group.Enemy.Position;
