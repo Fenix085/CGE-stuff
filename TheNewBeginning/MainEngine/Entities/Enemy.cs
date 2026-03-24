@@ -11,8 +11,8 @@ public class Enemy : Sprite
     public bool IsDead = false;
     public Vector2 Velocity { get; private set; }
     public float CurrentSpeed { get; private set; } = 0f;
-    public float DetectionRadius {get; set;} = 300f;
-    public float FollowRadius {get; set;} = 500f;
+    public float DetectionRadius {get; set;} = 500f;
+    public float FollowRadius {get; set;} = 200f;
 
     public Enemy(AnimatedSprite sprite, Vector2 position, int hp)
     {
