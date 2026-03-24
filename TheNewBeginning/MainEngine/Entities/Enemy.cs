@@ -11,7 +11,8 @@ public class Enemy : Sprite
     public bool IsDead = false;
     public Vector2 Velocity { get; private set; }
     public float CurrentSpeed { get; private set; } = 0f;
-    public const float DETECTION_RADIUS = 300f;
+    public float DetectionRadius {get; set;} = 300f;
+    public float FollowRadius {get; set;} = 500f;
 
     public Enemy(AnimatedSprite sprite, Vector2 position, int hp)
     {
@@ -37,7 +38,8 @@ public class Enemy : Sprite
     {
         Vector2 toTarget = targetPosition - Position;
         float distance = toTarget.Length();
-        if (distance > DETECTION_RADIUS)
+        bool infiniteDetection = DetectionRadius < 0f;
+        if (!infiniteDetection && distance > DetectionRadius)
         {
             CurrentSpeed = 0f;
             return;

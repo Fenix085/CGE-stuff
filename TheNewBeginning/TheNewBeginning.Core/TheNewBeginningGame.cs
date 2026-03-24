@@ -91,7 +91,7 @@ public class TheNewBeginningGame : Game
                 RepulsionForce = 10f,
                 AlignmentForce = 5f,
                 AttractionForce = 2f,
-                GravitationForce = 0.07f,
+                GravitationForce = 0.5f,
                 DebugVisible = true
             };
 
@@ -129,8 +129,15 @@ public class TheNewBeginningGame : Game
         foreach ( var group in _enemyFlocks)
         {
             group.Enemy.Update(gameTime);
+            float distanceToPlayer = Vector2.Distance(group.Enemy.Position, _player.Position);
+            bool following = distanceToPlayer <= group.Enemy.FollowRadius;
             if (!group.Enemy.IsDead)
                 group.Enemy.MoveToward(_player.Position, dt, leaderActiveSpeed);
+            
+            if (following)
+            {
+                group.Agents.ForEach(agent => agent.MoveToward(_player.Position, dt, leaderActiveSpeed + 50f));
+            }
 
             if (group.Enemy.CurrentSpeed <= 0f && !group.Enemy.IsDead)
             {
@@ -143,8 +150,9 @@ public class TheNewBeginningGame : Game
                 group.Config.AgentSpeed = leaderActiveSpeed + 20f;
             }
 
+
             group.ForceSources.Clear();
-            group.ForceSources.Add(new ForceSource(_player.Position, 100f, -70f));
+            group.ForceSources.Add(new ForceSource(_player.Position, 45f, -10f));
             if (!group.Enemy.IsDead)
             {
                 group.ForceSources.Add(new ForceSource(group.Enemy.Position, 275f, 30f));
