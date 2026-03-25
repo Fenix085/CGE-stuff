@@ -34,6 +34,22 @@
             <Frame region="enemy-5" />
         </Animation>
     </Animations>
+    <Texture>images/atlas</Texture>
+    <Regions>
+        <Region name="unfocused-button" x="259" y="80" width="65" height="14" />
+        <Region name="focused-button-1" x="259" y="94" width="65" height="14" />
+        <Region name="focused-button-2" x="259" y="109" width="65" height="14" />
+        <Region name="panel-background" x="324" y="97" width="15" height="15" />
+        <Region name="slider-off-background" x="341" y="96" width="11" height="10" />
+        <Region name="slider-middle-background" x="345" y="81" width="3" height="3" />
+        <Region name="slider-max-background" x="354" y="96" width="11" height="10" />
+    </Regions>
+    <Animations>
+    <Animation name="focused-button-animation" delay="300">
+            <Frame region="focused-button-1" />
+            <Frame region="focused-button-2" />
+        </Animation>
+    </Animations>
     <Texture>images/Arrow</Texture>
     <Regions>
         <Region name="Arrow" x="0" y="0" width="100" height="100" />

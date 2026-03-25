@@ -1,7 +1,9 @@
 using System;
+using TheNewBeginning.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Audio;
 using MainEngine;
 using MainEngine.Graphics;
 using MainEngine.Input;
@@ -11,6 +13,12 @@ using MainEngine.Camera;
 using MainEngine.Projectile;
 using MainEngine.Entities;
 using System.Collections.Generic;
+using Gum.DataTypes;
+using Gum.Managers;
+using Gum.Wireframe;
+using MonoGameGum;
+using Gum.Forms.Controls;
+using MonoGameGum.GueDeriving;
 
 namespace TheNewBeginning.Scenes;
 
@@ -26,6 +34,7 @@ public class GameScene : Scene
     private Player _player;
     private Camera _camera;
     private Enemy _enemy;
+    
 
     private List<Projectile> _projectiles = new();
     private Sprite _projectileSprite;
@@ -34,25 +43,44 @@ public class GameScene : Scene
     private List<EnemyFlockGroup> _enemyFlocks = new();
     private const int EnemyCount = 3;
     private const int AgentsPerEnemy = 20;
+
+    // A reference to the pause panel UI element so we can set its visibility
+// when the game is paused.
+private Panel _pausePanel;
+
+// A reference to the resume button UI element so we can focus it
+// when the game is paused.
+private AnimatedButton _resumeButton;
+
+// The UI sound effect to play when a UI event is triggered.
+private SoundEffect _uiSoundEffect;
+
+// Reference to the texture atlas that we can pass to UI elements when they
+// are created.
+private TextureAtlas _atlas;
+
+
     public override void Initialize()
     {
         _camera = new Camera();
         base.Initialize();
+
+            InitializeUI();
     }
     public override void LoadContent()
     {
         // Create the texture atlas from the XML configuration file.
-        TextureAtlas atlas = TextureAtlas.FromFile(Content, "images/atlas-definition.xml");
+        TextureAtlas _atlas = TextureAtlas.FromFile(Content, "images/atlas-definition.xml");
 
         // Create the player animated sprite from the atlas.
-        AnimatedSprite playerSprite = atlas.CreateAnimatedSprite("player-animation");
+        AnimatedSprite playerSprite = _atlas.CreateAnimatedSprite("player-animation");
         playerSprite.Scale = new Vector2(4f);
         playerSprite.CenterOrigin();
 
         _player = new Player(playerSprite, Vector2.Zero, 3);
 
         // Create the enemy animated sprite from the atlas.
-        AnimatedSprite enemySprite = atlas.CreateAnimatedSprite("enemy-animation");
+        AnimatedSprite enemySprite = _atlas.CreateAnimatedSprite("enemy-animation");
         enemySprite.Scale = new Vector2(4f);
         enemySprite.CenterOrigin();
 
@@ -61,14 +89,14 @@ public class GameScene : Scene
         _enemy.Position = new Vector2(playerSprite.Width + 10, 0);
 
         // Set up the agent sprite using the first Orc frame.
-        Sprite agentSprite = atlas.CreateSprite("enemy-1");
+        Sprite agentSprite = _atlas.CreateSprite("enemy-1");
         agentSprite.Scale = new Vector2(2f, 2f);
         TextureRegion agentRegion = agentSprite.Region;
 
         _enemyFlocks.Clear();
         for(int i = 0; i < EnemyCount; i++)
         {
-            AnimatedSprite flockEnemySprite = atlas.CreateAnimatedSprite("enemy-animation");
+            AnimatedSprite flockEnemySprite = _atlas.CreateAnimatedSprite("enemy-animation");
             flockEnemySprite.Scale = new Vector2(4f);
             flockEnemySprite.CenterOrigin();
 
@@ -102,12 +130,99 @@ public class GameScene : Scene
 
             _enemyFlocks.Add(group);
         }
-        _projectileSprite = atlas.CreateSprite("Arrow");
+        _projectileSprite = _atlas.CreateSprite("Arrow");
         _projectileSprite.Scale = new Vector2(2f);
         _projectileSprite.CenterOrigin();
+
+        _uiSoundEffect = HQ.Content.Load<SoundEffect>("audio/ui");
     }
+
+private void CreatePausePanel()
+{
+    _pausePanel = new Panel();
+    _pausePanel.Anchor(Anchor.Center);
+    _pausePanel.WidthUnits = DimensionUnitType.Absolute;
+    _pausePanel.HeightUnits = DimensionUnitType.Absolute;
+    _pausePanel.Height = 70;
+    _pausePanel.Width = 264;
+    _pausePanel.IsVisible = false;
+    _pausePanel.AddToRoot();
+
+    // TextureRegion backgroundRegion = _atlas.GetRegion("panel-background");
+
+    // NineSliceRuntime background = new NineSliceRuntime();
+    // background.Dock(Dock.Fill);
+    // background.Texture = backgroundRegion.Texture;
+    // background.TextureAddress = TextureAddress.Custom;
+    // background.TextureHeight = backgroundRegion.Height;
+    // background.TextureLeft = backgroundRegion.SourceRectangle.Left;
+    // background.TextureTop = backgroundRegion.SourceRectangle.Top;
+    // background.TextureWidth = backgroundRegion.Width;
+    // _pausePanel.AddChild(background);
+
+    TextRuntime textInstance = new TextRuntime();
+    textInstance.Text = "PAUSED";
+    textInstance.CustomFontFile = @"fonts/04b_30.fnt";
+    textInstance.UseCustomFont = true;
+    textInstance.FontScale = 0.5f;
+    textInstance.X = 10f;
+    textInstance.Y = 10f;
+    _pausePanel.AddChild(textInstance);
+
+    _resumeButton = new AnimatedButton(_atlas);
+    _resumeButton.Text = "RESUME";
+    _resumeButton.Anchor(Anchor.BottomLeft);
+    _resumeButton.X = 9f;
+    _resumeButton.Y = -9f;
+    _resumeButton.Click += HandleResumeButtonClicked;
+    _pausePanel.AddChild(_resumeButton);
+
+    AnimatedButton quitButton = new AnimatedButton(_atlas);
+    quitButton.Text = "QUIT";
+    quitButton.Anchor(Anchor.BottomRight);
+    quitButton.X = -9f;
+    quitButton.Y = -9f;
+    quitButton.Click += HandleQuitButtonClicked;
+
+    _pausePanel.AddChild(quitButton);
+}
+
+private void HandleResumeButtonClicked(object sender, EventArgs e)
+{
+    // A UI interaction occurred, play the sound effect
+    HQ.Audio.PlaySoundEffect(_uiSoundEffect);
+
+    // Make the pause panel invisible to resume the game.
+    _pausePanel.IsVisible = false;
+}
+
+private void HandleQuitButtonClicked(object sender, EventArgs e)
+{
+    // A UI interaction occurred, play the sound effect
+    HQ.Audio.PlaySoundEffect(_uiSoundEffect);
+
+    // Go back to the title scene.
+    HQ.ChangeScene(new TitleScene());
+}
+
+private void InitializeUI()
+{
+    GumService.Default.Root.Children.Clear();
+
+    CreatePausePanel();
+}
+
+
     public override void Update(GameTime gameTime)
     {
+        GumService.Default.Update(gameTime);
+
+        // If the game is paused, do not continue
+        if (_pausePanel.IsVisible)
+        {
+            return;
+        }
+        
         if (HQ.Input.Keyboard.IsKeyDown(Keys.Escape))
             HQ.Instance.Exit();
         // Update the player animated sprite.
@@ -231,6 +346,29 @@ public class GameScene : Scene
             _projectiles.Add(projectile);
         }
     }
+
+    private void PauseGame()
+{
+    // Make the pause panel UI element visible.
+    _pausePanel.IsVisible = true;
+
+    // Set the resume button to have focus
+    _resumeButton.IsFocused = true;
+}
+
+private void CheckKeyboardInput()
+{
+    // Get a reference to the keyboard info
+    KeyboardInfo keyboard = HQ.Input.Keyboard;
+
+    // If the escape key is pressed, pause the game.
+    if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.Escape))
+    {
+        PauseGame();
+        return;
+    }
+}
+
     public override void Draw(GameTime gameTime)
     {
         // Clear the back buffer.
@@ -263,6 +401,8 @@ public class GameScene : Scene
 
         // Always end the sprite batch when finished.
         HQ.SpriteBatch.End();
+
+        GumService.Default.Draw();
 
         base.Draw(gameTime);
     }
