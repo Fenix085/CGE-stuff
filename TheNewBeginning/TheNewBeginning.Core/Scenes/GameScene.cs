@@ -16,6 +16,13 @@ namespace TheNewBeginning.Scenes;
 
 public class GameScene : Scene
 {
+    private class EnemyFlockGroup
+    {
+        public Enemy Enemy;
+        public List<Agent> Agents = new();
+        public AgentConfig Config;
+        public List<ForceSource> ForceSources = new();
+    }
     private Player _player;
     private Camera _camera;
     private Enemy _enemy;
@@ -24,9 +31,9 @@ public class GameScene : Scene
     private Sprite _projectileSprite;
 
     // Agent flock
-    private List<Agent> _agents;
-    private AgentConfig _agentConfig;
-    private List<ForceSource> _forceSources;
+    private List<EnemyFlockGroup> _enemyFlocks = new();
+    private const int EnemyCount = 3;
+    private const int AgentsPerEnemy = 20;
     public override void Initialize()
     {
         _camera = new Camera();
@@ -54,37 +61,46 @@ public class GameScene : Scene
         _enemy.Position = new Vector2(playerSprite.Width + 10, 0);
 
         // Set up the agent sprite using the first Orc frame.
-        Sprite agentSpriteTemplate = atlas.CreateSprite("enemy-1");
-        agentSpriteTemplate.Scale = new Vector2(3.0f, 3.0f);
-        TextureRegion agentRegion = agentSpriteTemplate.Region;
+        Sprite agentSprite = atlas.CreateSprite("enemy-1");
+        agentSprite.Scale = new Vector2(2f, 2f);
+        TextureRegion agentRegion = agentSprite.Region;
 
-        // Configure flocking behaviour.
-        _agentConfig = new AgentConfig
+        _enemyFlocks.Clear();
+        for(int i = 0; i < EnemyCount; i++)
         {
-            AgentSpeed = 65f,
-            RepulsionRadius = 50f,
-            AlignmentRadius = 75f,
-            AttractionRadius = 125f,
-            AttractionAngle = MathHelper.ToRadians(70f),
-            RepulsionForce = 7f,
-            AlignmentForce = 3f,
-            AttractionForce = 1f,
-            GravitationForce = 0.75f,
-            DebugVisible = true
+            AnimatedSprite flockEnemySprite = atlas.CreateAnimatedSprite("enemy-animation");
+            flockEnemySprite.Scale = new Vector2(4f);
+            flockEnemySprite.CenterOrigin();
 
-        };
-        // Force sources list (rebuilt each frame).
-        _forceSources = new List<ForceSource>();
-        // Spawn agents scattered across the screen.
-        _agents = new List<Agent>();
-        Vector2 center = new Vector2(640, 360);
-        for (int i = 0; i < 30; i++)
-        {
-            Agent agent = new Agent(agentRegion, center);
-            agent.Scale = agentSpriteTemplate.Scale;
-            agent.Scatter(1280, 720);
-            agent.Center = center;
-            _agents.Add(agent);
+            Vector2 enemyStart = new Vector2(150 + i * 120, 100 + (i % 2) * 180);
+            Enemy enemy = new Enemy(flockEnemySprite, enemyStart, 3);
+
+            AgentConfig config = new AgentConfig
+            {
+                AgentSpeed = 65f,
+                RepulsionRadius = 50f,
+                AlignmentRadius = 100f,
+                AttractionRadius = 200f,
+                AttractionAngle = MathHelper.ToRadians(70f),
+                RepulsionForce = 10f,
+                AlignmentForce = 5f,
+                AttractionForce = 2f,
+                GravitationForce = 0.5f,
+                DebugVisible = true
+            };
+
+            var group = new EnemyFlockGroup { Enemy = enemy, Config = config };
+
+            for (int j = 0; j < AgentsPerEnemy; j++)
+            {
+                Agent agent = new Agent(agentRegion, enemyStart);
+                agent.Scale = agentSprite.Scale;
+                agent.Scatter(1280, 720);
+                agent.Center = enemyStart;
+                group.Agents.Add(agent);
+            }
+
+            _enemyFlocks.Add(group);
         }
         _projectileSprite = atlas.CreateSprite("Arrow");
         _projectileSprite.Scale = new Vector2(2f);
@@ -96,69 +112,98 @@ public class GameScene : Scene
             HQ.Instance.Exit();
         // Update the player animated sprite.
         _player.Update(gameTime);
-        _enemy.Update(gameTime);
 
-        // Build force sources for this frame.
-        _forceSources.Clear();
-        _forceSources.Add(new ForceSource(_player.Position, 250f, -100f));
-        // Add projectiles, obstacles, lures, etc.:
-        // _forceSources.Add(new ForceSource(projectilePos, 60f, -15f));  // repels
-        // _forceSources.Add(new ForceSource(lurePos, 120f, 5f));       // attracts
-        // Process agent flocking logic and update positions.
-        Agent.Process(_agents, _agentConfig, _forceSources);
-        foreach (var agent in _agents)
-            agent.Update(gameTime);
+        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        const float leaderActiveSpeed = 90f;
+
+        foreach ( var group in _enemyFlocks)
+        {
+            group.Enemy.Update(gameTime);
+            float distanceToPlayer = Vector2.Distance(group.Enemy.Position, _player.Position);
+            bool following = distanceToPlayer <= group.Enemy.FollowRadius;
+            if (!group.Enemy.IsDead)
+                group.Enemy.MoveToward(_player.Position, dt, leaderActiveSpeed);
+            
+            if (following)
+            {
+                group.Agents.ForEach(agent => agent.MoveToward(_player.Position, dt, leaderActiveSpeed + 50f));
+            }
+
+            if (group.Enemy.CurrentSpeed <= 0f && !group.Enemy.IsDead)
+            {
+                group.Config.AgentSpeed = 20f;
+            }else if (group.Enemy.IsDead)
+            {
+                group.Config.AgentSpeed = 0f;
+            }else
+            {
+                group.Config.AgentSpeed = leaderActiveSpeed + 20f;
+            }
+
+
+            group.ForceSources.Clear();
+            group.ForceSources.Add(new ForceSource(_player.Position, 45f, -10f));
+            if (!group.Enemy.IsDead)
+            {
+                group.ForceSources.Add(new ForceSource(group.Enemy.Position, 275f, 30f));
+                group.ForceSources.Add(new ForceSource(group.Enemy.Position, 100f, -90f));
+            }
+            foreach (var agent in group.Agents)
+                agent.Center = group.Enemy.Position;
+
+            Agent.Process(group.Agents, group.Config, group.ForceSources);
+            foreach (var agent in group.Agents)
+                agent.Update(gameTime);
+        }
 
         _camera.Pos = _player.Position;
         
         // Check for mouse input and handle it.
         CheckMouseInput();
 
+        foreach (var projectile in _projectiles)
+            projectile.Update(gameTime);
 
-
-        // Creating a bounding circle for entities sprites to use for collision checks.
+        // Creating bounding circles for collision checks.
         Circle playerBounds = _player.GetBounds();
-        Circle enemyBounds = _enemy.GetBounds();
 
-        if (enemyBounds.Intersects(playerBounds))
+        foreach ( var group in _enemyFlocks)
         {
-            
-            // Divide the width and height of the screen into equal columns and
-            // rows based on the width and height of the player.
-            int totalColumns = HQ.GraphicsDevice.PresentationParameters.BackBufferWidth / (int)_player.Sprite.Width;
-            int totalRows = HQ.GraphicsDevice.PresentationParameters.BackBufferHeight / (int)_player.Sprite.Height;
+            if (group.Enemy.IsDead)
+                continue;
 
-            // Choose a random row and column based on the total number of each
-            int column = Random.Shared.Next(0, totalColumns);
-            int row = Random.Shared.Next(0, totalRows);
-
-            // Change the player position by setting the x and y values equal to
-            // the column and row multiplied by the width and height.
-            _player.Position = new Vector2(column * _player.Sprite.Width, row * _player.Sprite.Height);
-            
-            _player.Health.TakeDamage(2);
-            if(_player.Health.IsDead)
+            Circle enemyBounds = group.Enemy.GetBounds();
+            if (enemyBounds.Intersects(playerBounds))
             {
-                HQ.Instance.Exit();
+                var pp = HQ.GraphicsDevice.PresentationParameters;
+                int totalColumns = pp.BackBufferWidth / (int)_player.Sprite.Width;
+                int totalRows = pp.BackBufferHeight / (int)_player.Sprite.Height;
+
+                int column = Random.Shared.Next(0, totalColumns);
+                int row = Random.Shared.Next(0, totalRows);
+
+                _player.Position = new Vector2(column * _player.Sprite.Width, row * _player.Sprite.Height);
+
+                _player.Health.TakeDamage(2);
+                if (_player.Health.IsDead)
+                {
+                    // Exit();
+                }
             }
-        }
 
             foreach (var projectile in _projectiles)
             {
-                projectile.Update(gameTime);
-                if(projectile.Bounds.Intersects(enemyBounds))
+                if (!projectile.IsDead && projectile.Bounds.Intersects(enemyBounds))
                 {
-                    _enemy.Health.TakeDamage(1);
+                    group.Enemy.Health.TakeDamage(1);
                     projectile.Hit = true;
                 }
-            }
-            _projectiles.RemoveAll(b => b.IsDead);
+            }    
 
-            if (_enemy.Health.IsDead && !_enemy.IsDead)
-            {
-                _enemy.IsDead = true;
-            }
-        base.Update(gameTime);
+            if(group.Enemy.Health.IsDead && !group.Enemy.IsDead)
+                group.Enemy.ApplyDeath();
+        }
     }
     private void CheckMouseInput()
     {
@@ -197,21 +242,20 @@ public class GameScene : Scene
         // Draw the player sprite.
         _player.Draw(gameTime, HQ.SpriteBatch);
 
-        // Draw the enemy sprite 10px to the right of the player.
-        if (!_enemy.IsDead)
+        foreach ( var group in _enemyFlocks)
         {
-            _enemy.Draw(gameTime, HQ.SpriteBatch);
-        }
+            if (!group.Enemy.IsDead)
+                group.Enemy.Draw(gameTime, HQ.SpriteBatch);
 
-        // Draw all agents.
-        foreach (var agent in _agents)
-        {
-            agent.Draw(gameTime, HQ.SpriteBatch);
-            agent.DrawDebug(HQ.SpriteBatch, _agentConfig);
+            foreach (var agent in group.Agents)
+            {
+                agent.Draw(gameTime, HQ.SpriteBatch);
+                agent.DrawDebug(HQ.SpriteBatch, group.Config);
+            }
+
+            Agent.DrawDebugForceSources(HQ.SpriteBatch, group.ForceSources);
         }
         
-        Agent.DrawDebugForceSources(HQ.SpriteBatch, _forceSources);
-
         foreach (var projectile in _projectiles)
         {
             projectile.Draw(gameTime, HQ.SpriteBatch);
