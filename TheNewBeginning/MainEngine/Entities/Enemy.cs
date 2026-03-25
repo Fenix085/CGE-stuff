@@ -9,7 +9,10 @@ public class Enemy : Sprite
     public AnimatedSprite Sprite { get; private set; }
     public Health Health;
     public bool IsDead = false;
-    public const float MOVEMENT_SPEED = 3f;
+    public Vector2 Velocity { get; private set; }
+    public float CurrentSpeed { get; private set; } = 0f;
+    public float DetectionRadius {get; set;} = 500f;
+    public float FollowRadius {get; set;} = 200f;
 
     public Enemy(AnimatedSprite sprite, Vector2 position, int hp)
     {
@@ -31,14 +34,21 @@ public class Enemy : Sprite
 
     #region Moving
 
-    public void MoveToward(Vector2 targetPosition)
+    public void MoveToward(Vector2 targetPosition, float dt, float activeSpeed)
     {
-        Vector2 direction = targetPosition - Position;
-        if (direction != Vector2.Zero)
+        Vector2 toTarget = targetPosition - Position;
+        float distance = toTarget.Length();
+        bool infiniteDetection = DetectionRadius < 0f;
+        if (!infiniteDetection && distance > DetectionRadius)
         {
-            direction.Normalize();
-            Position += direction * MOVEMENT_SPEED;
+            CurrentSpeed = 0f;
+            return;
         }
+
+        CurrentSpeed = activeSpeed;
+        Vector2 direction = toTarget / distance;
+        Velocity = direction * activeSpeed;
+        Position += Velocity * dt;
     }
 
     #endregion

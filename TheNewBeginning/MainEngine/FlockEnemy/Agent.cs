@@ -203,6 +203,26 @@ public class Agent : Sprite
                 ApplyForceSource(source);
         }
     }
+    
+    public float CurrentSpeed { get; private set; }
+
+    public void MoveToward(Vector2 targetPosition, float dt, float activeSpeed)
+    {
+        CurrentSpeed = activeSpeed;
+
+        Vector2 toTarget = targetPosition - Position;
+        float distance = toTarget.Length();
+
+        if (distance <= float.Epsilon)
+        {
+            Velocity = Vector2.Zero;
+            return;
+        }
+
+        Vector2 direction = toTarget / distance;
+        Velocity = direction * CurrentSpeed;
+        Position += Velocity * dt;
+    }
 
     public override void ApplyDeath()
     {
