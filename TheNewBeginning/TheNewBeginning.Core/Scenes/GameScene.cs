@@ -44,42 +44,31 @@ public class GameScene : Scene
     private const int EnemyCount = 3;
     private const int AgentsPerEnemy = 20;
 
-    // A reference to the pause panel UI element so we can set its visibility
-// when the game is paused.
 private Panel _pausePanel;
-
-// A reference to the resume button UI element so we can focus it
-// when the game is paused.
 private AnimatedButton _resumeButton;
 
-// The UI sound effect to play when a UI event is triggered.
 private SoundEffect _uiSoundEffect;
-
-// Reference to the texture atlas that we can pass to UI elements when they
-// are created.
 private TextureAtlas _atlas;
 
 
     public override void Initialize()
     {
+        HQ.ExitOnEscape = false;
         _camera = new Camera();
         base.Initialize();
-
-            InitializeUI();
     }
     public override void LoadContent()
     {
-        // Create the texture atlas from the XML configuration file.
-        TextureAtlas _atlas = TextureAtlas.FromFile(Content, "images/atlas-definition.xml");
+        _atlas = TextureAtlas.FromFile(Content, "images/atlas-definition.xml");
+        
+        InitializeUI();
 
-        // Create the player animated sprite from the atlas.
         AnimatedSprite playerSprite = _atlas.CreateAnimatedSprite("player-animation");
         playerSprite.Scale = new Vector2(4f);
         playerSprite.CenterOrigin();
 
         _player = new Player(playerSprite, Vector2.Zero, 3);
 
-        // Create the enemy animated sprite from the atlas.
         AnimatedSprite enemySprite = _atlas.CreateAnimatedSprite("enemy-animation");
         enemySprite.Scale = new Vector2(4f);
         enemySprite.CenterOrigin();
@@ -88,7 +77,6 @@ private TextureAtlas _atlas;
 
         _enemy.Position = new Vector2(playerSprite.Width + 10, 0);
 
-        // Set up the agent sprite using the first Orc frame.
         Sprite agentSprite = _atlas.CreateSprite("enemy-1");
         agentSprite.Scale = new Vector2(2f, 2f);
         TextureRegion agentRegion = agentSprite.Region;
@@ -189,19 +177,15 @@ private void CreatePausePanel()
 
 private void HandleResumeButtonClicked(object sender, EventArgs e)
 {
-    // A UI interaction occurred, play the sound effect
     HQ.Audio.PlaySoundEffect(_uiSoundEffect);
 
-    // Make the pause panel invisible to resume the game.
     _pausePanel.IsVisible = false;
 }
 
 private void HandleQuitButtonClicked(object sender, EventArgs e)
 {
-    // A UI interaction occurred, play the sound effect
     HQ.Audio.PlaySoundEffect(_uiSoundEffect);
 
-    // Go back to the title scene.
     HQ.ChangeScene(new TitleScene());
 }
 
@@ -212,20 +196,23 @@ private void InitializeUI()
     CreatePausePanel();
 }
 
-
     public override void Update(GameTime gameTime)
     {
         GumService.Default.Update(gameTime);
 
-        // If the game is paused, do not continue
+        if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.Escape))
+{
+    _pausePanel.IsVisible = !_pausePanel.IsVisible;
+
+    if (_pausePanel.IsVisible)
+        _resumeButton.IsFocused = true;
+}
+
         if (_pausePanel.IsVisible)
         {
             return;
         }
         
-        if (HQ.Input.Keyboard.IsKeyDown(Keys.Escape))
-            HQ.Instance.Exit();
-        // Update the player animated sprite.
         _player.Update(gameTime);
 
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -273,14 +260,12 @@ private void InitializeUI()
         }
 
         _camera.Pos = _player.Position;
-        
-        // Check for mouse input and handle it.
+    
         CheckMouseInput();
 
         foreach (var projectile in _projectiles)
             projectile.Update(gameTime);
 
-        // Creating bounding circles for collision checks.
         Circle playerBounds = _player.GetBounds();
 
         foreach ( var group in _enemyFlocks)
@@ -349,19 +334,15 @@ private void InitializeUI()
 
     private void PauseGame()
 {
-    // Make the pause panel UI element visible.
     _pausePanel.IsVisible = true;
 
-    // Set the resume button to have focus
     _resumeButton.IsFocused = true;
 }
 
 private void CheckKeyboardInput()
 {
-    // Get a reference to the keyboard info
     KeyboardInfo keyboard = HQ.Input.Keyboard;
 
-    // If the escape key is pressed, pause the game.
     if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.Escape))
     {
         PauseGame();
@@ -371,13 +352,10 @@ private void CheckKeyboardInput()
 
     public override void Draw(GameTime gameTime)
     {
-        // Clear the back buffer.
         HQ.GraphicsDevice.Clear(Color.CornflowerBlue);
 
-        // Begin the sprite batch to prepare for rendering.
         HQ.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: _camera.get_transformation(HQ.GraphicsDevice));
 
-        // Draw the player sprite.
         _player.Draw(gameTime, HQ.SpriteBatch);
 
         foreach ( var group in _enemyFlocks)
@@ -399,7 +377,6 @@ private void CheckKeyboardInput()
             projectile.Draw(gameTime, HQ.SpriteBatch);
         }
 
-        // Always end the sprite batch when finished.
         HQ.SpriteBatch.End();
 
         GumService.Default.Draw();

@@ -11,38 +11,24 @@ using MainEngine.Graphics;
 
 namespace TheNewBeginning.UI;
 
-/// <summary>
-/// A custom button implementation that inherits from Gum's Button class to provide
-/// animated visual feedback when focused.
-/// </summary>
 internal class AnimatedButton : Button
 {
-    /// <summary>
-    /// Creates a new AnimatedButton instance using graphics from the specified texture atlas.
-    /// </summary>
-    /// <param name="atlas">The texture atlas containing button graphics and animations</param>
     public AnimatedButton(TextureAtlas atlas)
     {
-        // Each Forms control has a general Visual property that
-        // has properties shared by all control types. This Visual
-        // type matches the Forms type. It can be casted to access
-        // controls-specific properties.
+ 
         ButtonVisual buttonVisual = (ButtonVisual)Visual;
-        // Width is relative to children with extra padding, height is fixed
+
         buttonVisual.Height = 14f;
         buttonVisual.HeightUnits = DimensionUnitType.Absolute;
         buttonVisual.Width = 21f;
         buttonVisual.WidthUnits = DimensionUnitType.RelativeToChildren;
 
-        // Get a reference to the nine-slice background to display the button graphics
-        // A nine-slice allows the button to stretch while preserving corner appearance
         TextureRegion unfocusedTextureRegion = atlas.GetRegion("unfocused-button");
         
         NineSliceRuntime background = buttonVisual.Background;
         background.Texture = unfocusedTextureRegion.Texture;
         background.TextureAddress = TextureAddress.Custom;
         background.Color = Microsoft.Xna.Framework.Color.White;
-        // texture coordinates for the background are set down below
 
         TextRuntime textInstance = buttonVisual.TextInstance;
         textInstance.Text = "START";
@@ -56,7 +42,6 @@ internal class AnimatedButton : Button
         textInstance.Width = 0;
         textInstance.WidthUnits = DimensionUnitType.RelativeToChildren;
 
-        // Create an animation chain for the unfocused state with a single frame
         AnimationChain unfocusedAnimation = new AnimationChain();
         unfocusedAnimation.Name = nameof(unfocusedAnimation);
         AnimationFrame unfocusedFrame = new AnimationFrame
@@ -70,10 +55,8 @@ internal class AnimatedButton : Button
         };
         unfocusedAnimation.Add(unfocusedFrame);
 
-        // Get the multi-frame animation for the focused button state from the atlas
         Animation focusedAtlasAnimation = atlas.GetAnimation("focused-button-animation");
 
-        // Create an animation chain for the focused state using all frames from the atlas animation
         AnimationChain focusedAnimation = new AnimationChain();
         focusedAnimation.Name = nameof(focusedAnimation);
         foreach (TextureRegion region in focusedAtlasAnimation.Frames)
@@ -91,70 +74,49 @@ internal class AnimatedButton : Button
             focusedAnimation.Add(frame);
         }
 
-        // Assign both animation chains to the nine-slice background
         background.AnimationChains = new AnimationChainList
         {
             unfocusedAnimation,
             focusedAnimation
         };
 
-
-        // Reset all state to default so we don't have unexpected variable assignments:
         buttonVisual.ButtonCategory.ResetAllStates();
 
-        // Get the enabled (default/unfocused) state
         StateSave enabledState = buttonVisual.States.Enabled;
         enabledState.Apply = () =>
         {
-            // When enabled but not focused, use the unfocused animation
             background.CurrentChainName = unfocusedAnimation.Name;
         };
 
-        // Create the focused state
         StateSave focusedState = buttonVisual.States.Focused;
         focusedState.Apply = () =>
         {
-            // When focused, use the focused animation and enable animation playback
             background.CurrentChainName = focusedAnimation.Name;
             background.Animate = true;
         };
 
-        // Create the highlighted+focused state (for mouse hover while focused)
         StateSave highlightedFocused = buttonVisual.States.HighlightedFocused;
         highlightedFocused.Apply = focusedState.Apply;
 
-        // Create the highlighted state (for mouse hover)
-        // by cloning the enabled state since they appear the same
         StateSave highlighted = buttonVisual.States.Highlighted;
         highlighted.Apply = enabledState.Apply;
 
-        // Add event handlers for keyboard input.
         KeyDown += HandleKeyDown;
 
-        // Add event handler for mouse hover focus.
         buttonVisual.RollOn += HandleRollOn;
     }
 
-    /// <summary>
-    /// Handles keyboard input for navigation between buttons using left/right keys.
-    /// </summary>
     private void HandleKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Keys.Left)
         {
-            // Left arrow navigates to previous control
             HandleTab(TabDirection.Up, loop: true);
         }
         if (e.Key == Keys.Right)
         {
-            // Right arrow navigates to next control
             HandleTab(TabDirection.Down, loop: true);
         }
     }
-
-    /// <summary>
-    /// Automatically focuses the button when the mouse hovers over it.
-    /// </summary>
     private void HandleRollOn(object sender, EventArgs e)
     {
         IsFocused = true;

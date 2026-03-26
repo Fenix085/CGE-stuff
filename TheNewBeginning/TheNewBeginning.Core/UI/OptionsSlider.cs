@@ -44,7 +44,7 @@ public class OptionsSlider : Slider
 
         // Create the background panel that contains everything
         NineSliceRuntime background = new NineSliceRuntime();
-        background.Texture = atlas.Texture;
+        background.Texture = backgroundRegion.Texture;
         background.TextureAddress = TextureAddress.Custom;
         background.TextureHeight = backgroundRegion.Height;
         background.TextureLeft = backgroundRegion.SourceRectangle.Left;
@@ -77,7 +77,7 @@ public class OptionsSlider : Slider
         // Create the "OFF" side of the slider (left end)
         NineSliceRuntime offBackground = new NineSliceRuntime();
         offBackground.Dock(Gum.Wireframe.Dock.Left);
-        offBackground.Texture = atlas.Texture;
+        offBackground.Texture = offBackgroundRegion.Texture;
         offBackground.TextureAddress = TextureAddress.Custom;
         offBackground.TextureHeight = offBackgroundRegion.Height;
         offBackground.TextureLeft = offBackgroundRegion.SourceRectangle.Left;

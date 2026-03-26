@@ -19,73 +19,52 @@ public class TitleScene : Scene
 private const string PROJECT_TEXT2 = "Beginning";
 private const string PRESS_ENTER_TEXT = "Press Enter To Start";
 
-// The font to use to render normal text.
 private SpriteFont _font;
 
-// The font used to render the title text.
 private SpriteFont _font5x;
 
 private Texture2D _backgroundPattern;
 private Vector2 _backgroundOffset;
 private Rectangle _backgroundDestination;
 private float _scrollSpeed = 50f;
-
-// The position to draw the dungeon text at.
 private Vector2 _project1TextPos;
 
-// The origin to set for the dungeon text.
 private Vector2 _project1TextOrigin;
 
-// The position to draw the slime text at.
 private Vector2 _project2TextPos;
 
-// The origin to set for the slime text.
 private Vector2 _project2TextOrigin;
 
-// The position to draw the press enter text at.
 private Vector2 _pressEnterPos;
 
-// The origin to set for the press enter text when drawing it.
 private Vector2 _pressEnterOrigin;
 
 private SoundEffect _uiSoundEffect;
 private Panel _titleScreenButtonsPanel;
 private Panel _optionsPanel;
-// The options button used to open the options menu.
 private AnimatedButton _optionsButton;
 
-// The back button used to exit the options menu back to the title menu.
 private AnimatedButton _optionsBackButton;
 
-// Reference to the texture atlas that we can pass to UI elements when they
-// are created.
 private TextureAtlas _atlas;
 
 
 public override void Initialize()
 {
-    // LoadContent is called during base.Initialize().
     base.Initialize();
 
-    // While on the title screen, we can enable exit on escape so the player
-    // can close the game by pressing the escape key.
     HQ.ExitOnEscape = true;
 
-    // Set the position and origin for the Dungeon text.
     Vector2 size = _font5x.MeasureString(PROJECT_TEXT1);
     _project1TextPos = new Vector2(640, 100);
     _project1TextOrigin = size * 0.5f;
 
-    // Set the position and origin for the Slime text.
     size = _font5x.MeasureString(PROJECT_TEXT2);
     _project2TextPos = new Vector2(757, 207);
     _project2TextOrigin = size * 0.5f;
 
-    // Initialize the offset of the background pattern at zero
     _backgroundOffset = Vector2.Zero;
 
-    // Set the background pattern destination rectangle to fill the entire
-    // screen background
     _backgroundDestination = HQ.GraphicsDevice.PresentationParameters.Bounds;
 
     InitializeUI();
@@ -93,19 +72,15 @@ public override void Initialize()
 
 public override void LoadContent()
 {
-   // Load the font for the standard text.
    _font = HQ.Content.Load<SpriteFont>("fonts/04B_30");
 
-   // Load the font for the title text
    _font5x = Content.Load<SpriteFont>("fonts/04B_30_5x");
 
 //    Load the background pattern texture.
 //    _backgroundPattern = Content.Load<Texture2D>("images/background-pattern");
 
-   // Load the sound effect to play when ui actions occur.
    _uiSoundEffect = HQ.Content.Load<SoundEffect>("audio/ui");
 
-   // Load the texture atlas from the xml configuration file.
     _atlas = TextureAtlas.FromFile(HQ.Content, "images/atlas-definition.xml");
 }
 
@@ -136,27 +111,18 @@ public override void Draw(GameTime gameTime)
 
     if (_titleScreenButtonsPanel.IsVisible)
     {
-        // Begin the sprite batch to prepare for rendering.
         HQ.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-        // The color to use for the drop shadow text.
         Color dropShadowColor = Color.Black * 0.5f;
 
-        // Draw the Dungeon text slightly offset from it is original position and
-        // with a transparent color to give it a drop shadow
         HQ.SpriteBatch.DrawString(_font5x, PROJECT_TEXT1, _project1TextPos + new Vector2(10, 10), dropShadowColor, 0.0f, _project1TextOrigin, 1.0f, SpriteEffects.None, 1.0f);
 
-        // Draw the Dungeon text on top of that at its original position
         HQ.SpriteBatch.DrawString(_font5x, PROJECT_TEXT1, _project1TextPos, Color.White, 0.0f, _project1TextOrigin, 1.0f, SpriteEffects.None, 1.0f);
 
-        // Draw the Slime text slightly offset from it is original position and
-        // with a transparent color to give it a drop shadow
         HQ.SpriteBatch.DrawString(_font5x, PROJECT_TEXT2, _project2TextPos + new Vector2(10, 10), dropShadowColor, 0.0f, _project2TextOrigin, 1.0f, SpriteEffects.None, 1.0f);
 
-        // Draw the Slime text on top of that at its original position
         HQ.SpriteBatch.DrawString(_font5x, PROJECT_TEXT2, _project2TextPos, Color.White, 0.0f, _project2TextOrigin, 1.0f, SpriteEffects.None, 1.0f);
-
-        // Always end the sprite batch when finished.
+        
         HQ.SpriteBatch.End();
     }
 
@@ -165,7 +131,6 @@ public override void Draw(GameTime gameTime)
 
 private void CreateTitlePanel()
 {
-    // Create a container to hold all of our buttons
     _titleScreenButtonsPanel = new Panel();
     _titleScreenButtonsPanel.Dock(Gum.Wireframe.Dock.Fill);
     _titleScreenButtonsPanel.AddToRoot();
@@ -243,91 +208,63 @@ private void CreateOptionsPanel()
 }
 private void HandleStartClicked(object sender, EventArgs e)
 {
-    // A UI interaction occurred, play the sound effect
     HQ.Audio.PlaySoundEffect(_uiSoundEffect);
 
-    // Change to the game scene to start the game.
     HQ.ChangeScene(new GameScene());
 }
 
 private void HandleOptionsClicked(object sender, EventArgs e)
 {
-    // A UI interaction occurred, play the sound effect
     HQ.Audio.PlaySoundEffect(_uiSoundEffect);
     
-    // Set the title panel to be invisible.
     _titleScreenButtonsPanel.IsVisible = false;
 
-    // Set the options panel to be visible.
     _optionsPanel.IsVisible = true;
 
-    // Give the back button on the options panel focus.
     _optionsBackButton.IsFocused = true;
 }
 
 private void HandleSfxSliderChanged(object sender, EventArgs args)
 {
-    // Intentionally not playing the UI sound effect here so that it is not
-    // constantly triggered as the user adjusts the slider's thumb on the
-    // track.
-
-    // Get a reference to the sender as a Slider.
     var slider = (Slider)sender;
 
-    // Set the global sound effect volume to the value of the slider.;
     HQ.Audio.SoundEffectVolume = (float)slider.Value;
 }
 
 private void HandleSfxSliderChangeCompleted(object sender, EventArgs e)
 {
-    // Play the UI Sound effect so the player can hear the difference in audio.
     HQ.Audio.PlaySoundEffect(_uiSoundEffect);
 }
 
 private void HandleMusicSliderValueChanged(object sender, EventArgs args)
 {
-    // Intentionally not playing the UI sound effect here so that it is not
-    // constantly triggered as the user adjusts the slider's thumb on the
-    // track.
-
-    // Get a reference to the sender as a Slider.
     var slider = (Slider)sender;
 
-    // Set the global song volume to the value of the slider.
     HQ.Audio.SongVolume = (float)slider.Value;
 }
 
 private void HandleMusicSliderValueChangeCompleted(object sender, EventArgs args)
 {
-    // A UI interaction occurred, play the sound effect
     HQ.Audio.PlaySoundEffect(_uiSoundEffect);
 }
 
 private void HandleOptionsButtonBack(object sender, EventArgs e)
 {
-    // A UI interaction occurred, play the sound effect
     HQ.Audio.PlaySoundEffect(_uiSoundEffect);
 
-    // Set the title panel to be visible.
     _titleScreenButtonsPanel.IsVisible = true;
 
-    // Set the options panel to be invisible.
     _optionsPanel.IsVisible = false;
 
-    // Give the options button on the title panel focus since we are coming
-    // back from the options screen.
     _optionsButton.IsFocused = true;
 }
 
 private void InitializeUI()
 {
-    // Clear out any previous UI in case we came here from
-    // a different screen:
     GumService.Default.Root.Children.Clear();
 
     CreateTitlePanel();
     CreateOptionsPanel();
 }
-
 
 }
