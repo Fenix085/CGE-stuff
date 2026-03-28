@@ -196,6 +196,19 @@ private void InitializeUI()
     CreatePausePanel();
 }
 
+private float DistancePointToSegment(Vector2 point, Vector2 a, Vector2 b)
+    {
+        Vector2 ab = b - a;
+
+        if(ab.LengthSquared() == 0)
+            return Vector2.Distance(point,a);
+        
+        float t = Vector2.Dot(point - a, ab) / ab.LengthSquared();
+        t = MathHelper.Clamp(t, 0f, 1f);
+
+        Vector2 closest = a + t * ab;
+        return Vector2.Distance(point, closest);
+    }
     public override void Update(GameTime gameTime)
     {
         GumService.Default.Update(gameTime);
@@ -265,6 +278,8 @@ private void InitializeUI()
 
         foreach (var projectile in _projectiles)
             projectile.Update(gameTime);
+            
+        _projectiles.RemoveAll(p => p.IsDead);
 
         Circle playerBounds = _player.GetBounds();
 
@@ -294,10 +309,22 @@ private void InitializeUI()
 
             foreach (var projectile in _projectiles)
             {
-                if (!projectile.IsDead && projectile.Bounds.Intersects(enemyBounds))
+                if (!projectile.IsDead)
                 {
-                    group.Enemy.Health.TakeDamage(1);
-                    projectile.Hit = true;
+                    float dist = DistancePointToSegment(
+                        group.Enemy.Position,
+                        projectile.PreviousPosition,
+                        projectile.Position
+                    );
+
+                    float enemyRadius = group.Enemy.GetBounds().Radius;
+                    float projectileRadius = projectile.Radius;
+
+                    if (dist < (enemyRadius + projectileRadius))
+                    {
+                        group.Enemy.Health.TakeDamage(1);
+                        projectile.Hit = true;
+                    }
                 }
             }    
 

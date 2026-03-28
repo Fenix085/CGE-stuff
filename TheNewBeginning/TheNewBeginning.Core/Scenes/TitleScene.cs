@@ -23,10 +23,8 @@ private SpriteFont _font;
 
 private SpriteFont _font5x;
 
-private Texture2D _backgroundPattern;
 private Vector2 _backgroundOffset;
 private Rectangle _backgroundDestination;
-private float _scrollSpeed = 50f;
 private Vector2 _project1TextPos;
 
 private Vector2 _project1TextOrigin;
@@ -34,10 +32,6 @@ private Vector2 _project1TextOrigin;
 private Vector2 _project2TextPos;
 
 private Vector2 _project2TextOrigin;
-
-private Vector2 _pressEnterPos;
-
-private Vector2 _pressEnterOrigin;
 
 private SoundEffect _uiSoundEffect;
 private Panel _titleScreenButtonsPanel;
