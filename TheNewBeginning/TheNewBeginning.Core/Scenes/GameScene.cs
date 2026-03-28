@@ -18,6 +18,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGameGum;
 using MonoGameGum.GueDeriving;
+using TheNewBeginning.Core.EnemyFSM;
 using TheNewBeginning.UI;
 
 namespace TheNewBeginning.Scenes;
