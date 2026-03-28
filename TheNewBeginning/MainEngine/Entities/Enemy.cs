@@ -10,7 +10,7 @@ public class Enemy : Sprite
     public Health Health;
     public bool IsDead = false;
     public Vector2 Velocity { get; private set; }
-    public float CurrentSpeed { get; private set; } = 0f;
+    public float CurrentSpeed { get; set; } = 0f;
     public float DetectionRadius {get; set;} = 500f;
     public float FollowRadius {get; set;} = 200f;
 
