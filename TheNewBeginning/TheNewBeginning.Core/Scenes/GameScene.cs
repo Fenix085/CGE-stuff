@@ -1,24 +1,24 @@
 using System;
-using TheNewBeginning.UI;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using Microsoft.Xna.Framework.Audio;
-using MainEngine;
-using MainEngine.Graphics;
-using MainEngine.Input;
-using MainEngine.Scenes;
-using MainEngine.FlockEnemy;
-using MainEngine.Camera;
-using MainEngine.Projectile;
-using MainEngine.Entities;
 using System.Collections.Generic;
 using Gum.DataTypes;
+using Gum.Forms.Controls;
 using Gum.Managers;
 using Gum.Wireframe;
+using MainEngine;
+using MainEngine.Camera;
+using MainEngine.Entities;
+using MainEngine.FlockEnemy;
+using MainEngine.Graphics;
+using MainEngine.Input;
+using MainEngine.Projectile;
+using MainEngine.Scenes;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using MonoGameGum;
-using Gum.Forms.Controls;
 using MonoGameGum.GueDeriving;
+using TheNewBeginning.UI;
 
 namespace TheNewBeginning.Scenes;
 
@@ -27,6 +27,7 @@ public class GameScene : Scene
     private class EnemyFlockGroup
     {
         public Enemy Enemy;
+        public EnemyFSM Brain;
         public List<Agent> Agents = new();
         public AgentConfig Config;
         public List<ForceSource> ForceSources = new();
@@ -41,7 +42,7 @@ public class GameScene : Scene
 
     // Agent flock
     private List<EnemyFlockGroup> _enemyFlocks = new();
-    private const int EnemyCount = 3;
+    private const int EnemyCount = 1;
     private const int AgentsPerEnemy = 20;
 
 private Panel _pausePanel;
@@ -105,7 +106,9 @@ private TextureAtlas _atlas;
                 DebugVisible = true
             };
 
-            var group = new EnemyFlockGroup { Enemy = enemy, Config = config };
+            var group = new EnemyFlockGroup { Enemy = enemy,
+                Brain = new EnemyFSM(enemy),
+                Config = config };
 
             for (int j = 0; j < AgentsPerEnemy; j++)
             {
@@ -230,31 +233,18 @@ private float DistancePointToSegment(Vector2 point, Vector2 a, Vector2 b)
 
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        const float leaderActiveSpeed = 90f;
-
         foreach ( var group in _enemyFlocks)
         {
             group.Enemy.Update(gameTime);
-            float distanceToPlayer = Vector2.Distance(group.Enemy.Position, _player.Position);
-            bool following = distanceToPlayer <= group.Enemy.FollowRadius;
-            if (!group.Enemy.IsDead)
-                group.Enemy.MoveToward(_player.Position, dt, leaderActiveSpeed);
+            group.Brain.Update(_player.Position, _player.Health.IsDead, gameTime);
+            bool following = group.Brain.ShouldFlockAttackPlayer;
             
             if (following)
             {
-                group.Agents.ForEach(agent => agent.MoveToward(_player.Position, dt, leaderActiveSpeed + 50f));
+                group.Agents.ForEach(agent => agent.MoveToward(_player.Position, dt, group.Brain.FlockSpeed));
             }
 
-            if (group.Enemy.CurrentSpeed <= 0f && !group.Enemy.IsDead)
-            {
-                group.Config.AgentSpeed = 20f;
-            }else if (group.Enemy.IsDead)
-            {
-                group.Config.AgentSpeed = 0f;
-            }else
-            {
-                group.Config.AgentSpeed = leaderActiveSpeed + 20f;
-            }
+            group.Config.AgentSpeed = group.Brain.FlockSpeed;
 
 
             group.ForceSources.Clear();
@@ -328,8 +318,6 @@ private float DistancePointToSegment(Vector2 point, Vector2 a, Vector2 b)
                 }
             }    
 
-            if(group.Enemy.Health.IsDead && !group.Enemy.IsDead)
-                group.Enemy.ApplyDeath();
         }
     }
     private void CheckMouseInput()
