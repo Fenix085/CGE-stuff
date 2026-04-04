@@ -11,6 +11,7 @@ using MainEngine.Camera;
 using MainEngine.Projectile;
 using MainEngine.Entities;
 using System.Collections.Generic;
+using MainEngine.Navigation;
 
 namespace TheNewBeginning.Scenes;
 
@@ -22,6 +23,9 @@ public class GameScene : Scene
         public List<Agent> Agents = new();
         public AgentConfig Config;
         public List<ForceSource> ForceSources = new();
+        public NavigationFollower Follower;
+        public float RepathTimer;
+        public bool IsLocalPursuit;
     }
     private Player _player;
     private Camera _camera;
@@ -32,8 +36,16 @@ public class GameScene : Scene
 
     // Agent flock
     private List<EnemyFlockGroup> _enemyFlocks = new();
-    private const int EnemyCount = 3;
+    private const int EnemyCount = 2;
     private const int AgentsPerEnemy = 20;
+    private const float RepathIntervalSeconds = 0.25f;
+    private const float LocalPursuitEnterRadius = 180f;
+    private const float LocalPursuitExitRadius = 260f;
+
+    private Navigation _nav = new();
+    private Texture2D _debugPixel;
+    private bool _drawNavigationDebug = true;
+
     public override void Initialize()
     {
         _camera = new Camera();
@@ -105,11 +117,66 @@ public class GameScene : Scene
         _projectileSprite = atlas.CreateSprite("Arrow");
         _projectileSprite.Scale = new Vector2(2f);
         _projectileSprite.CenterOrigin();
+
+        _nav.Clear();
+
+        var node1 = new NavNode { Id = 1, Position = new Vector2(100f, 100f)};
+        var node2 = new NavNode { Id = 2, Position = new Vector2(500f, 200f)};
+        var node3 = new NavNode { Id = 3, Position = new Vector2(300f, 400f)};
+
+        _nav.AddNode(node1);
+        _nav.AddNode(node2);
+        _nav.AddNode(node3);
+
+        _nav.AddHighway(
+            Highway.Create(
+                id: 1,
+                fromId: 1,
+                toId: 2,
+                fromPosition: node1.Position,
+                toPosition: node2.Position,
+                speedLimit: 90f
+            )
+        );
+
+        _nav.AddHighway(
+            Highway.Create(
+                id: 2,
+                fromId: 2,
+                toId: 1,
+                fromPosition: node2.Position,
+                toPosition: node1.Position,
+                speedLimit: 90f
+            )
+        );
+        _nav.AddHighway(
+            Highway.Create(
+                id: 3,
+                fromId: 2,
+                toId: 3,
+                fromPosition: node2.Position,
+                toPosition: node3.Position,
+                speedLimit: 90f
+            )
+        );
+        foreach (var group in _enemyFlocks)
+        {
+            group.Follower = new NavigationFollower(_nav);
+            group.RepathTimer = Random.Shared.NextSingle() * RepathIntervalSeconds;
+            group.IsLocalPursuit = false;
+        }
+
+        _debugPixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
+        _debugPixel.SetData(new[] { Color.White });
     }
     public override void Update(GameTime gameTime)
     {
         if (HQ.Input.Keyboard.IsKeyDown(Keys.Escape))
             HQ.Instance.Exit();
+
+        if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.F3))
+            _drawNavigationDebug = !_drawNavigationDebug;
+
         // Update the player animated sprite.
         _player.Update(gameTime);
 
@@ -120,10 +187,53 @@ public class GameScene : Scene
         foreach ( var group in _enemyFlocks)
         {
             group.Enemy.Update(gameTime);
+
             float distanceToPlayer = Vector2.Distance(group.Enemy.Position, _player.Position);
-            bool following = distanceToPlayer <= group.Enemy.FollowRadius;
+
             if (!group.Enemy.IsDead)
-                group.Enemy.MoveToward(_player.Position, dt, leaderActiveSpeed);
+            {
+                if (group.IsLocalPursuit)
+                {
+                    if (distanceToPlayer > LocalPursuitExitRadius)
+                        group.IsLocalPursuit = false;
+                }
+                else if (distanceToPlayer <= LocalPursuitEnterRadius)
+                {
+                    group.IsLocalPursuit = true;
+                    group.Follower.Clear();
+                }
+
+                if (group.IsLocalPursuit)
+                {
+                    group.Enemy.MoveToward(_player.Position, dt, leaderActiveSpeed);
+                }
+                else
+                {
+                    group.RepathTimer -= dt;
+                    if (group.RepathTimer <= 0f)
+                    {
+                        group.RepathTimer = RepathIntervalSeconds;
+
+                        bool foundPath = group.Follower.TryPlanFromWorld(
+                            group.Enemy.Position,
+                            _player.Position,
+                            snapDistance: float.PositiveInfinity
+                        );
+
+                        if (!foundPath)
+                            group.Follower.Clear();
+                    }
+
+                    Vector2 leaderTarget = group.Follower.HasPath
+                        ? group.Follower.GetSteeringTarget(group.Enemy.Position)
+                        : group.Enemy.Position;
+
+                    group.Enemy.MoveToward(leaderTarget, dt, leaderActiveSpeed);
+                }
+            }
+
+            distanceToPlayer = Vector2.Distance(group.Enemy.Position, _player.Position);
+            bool following = distanceToPlayer <= group.Enemy.FollowRadius;
             
             if (following)
             {
@@ -165,6 +275,8 @@ public class GameScene : Scene
         foreach (var projectile in _projectiles)
             projectile.Update(gameTime);
 
+        _projectiles.RemoveAll(projectile => projectile.IsDead);
+
         // Creating bounding circles for collision checks.
         Circle playerBounds = _player.GetBounds();
 
@@ -204,6 +316,7 @@ public class GameScene : Scene
             if(group.Enemy.Health.IsDead && !group.Enemy.IsDead)
                 group.Enemy.ApplyDeath();
         }
+
     }
     private void CheckMouseInput()
     {
@@ -239,6 +352,8 @@ public class GameScene : Scene
         // Begin the sprite batch to prepare for rendering.
         HQ.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: _camera.get_transformation(HQ.GraphicsDevice));
 
+        DrawNavigationDebug();
+
         // Draw the player sprite.
         _player.Draw(gameTime, HQ.SpriteBatch);
 
@@ -265,5 +380,64 @@ public class GameScene : Scene
         HQ.SpriteBatch.End();
 
         base.Draw(gameTime);
+    }
+
+    private void DrawNavigationDebug()
+    {
+        if (!_drawNavigationDebug || _debugPixel == null)
+            return;
+
+        foreach (var lane in _nav.Highways.Values)
+        {
+            if (!_nav.TryGetNode(lane.FromId, out var fromNode) || !_nav.TryGetNode(lane.ToId, out var toNode))
+                continue;
+
+            DrawLine(fromNode.Position, toNode.Position, lane.IsBlocked ? Color.DarkRed : Color.Orange, 2f);
+        }
+
+        foreach (var node in _nav.Nodes.Values)
+        {
+            DrawSquare(node.Position, 8f, Color.Gold);
+        }
+
+        foreach (var group in _enemyFlocks)
+        {
+            if (group.Follower == null)
+                continue;
+
+            NavigationPath path = group.Follower.CurrentPath;
+            if (path.IsEmpty)
+                continue;
+
+            foreach (int highwayId in path.HighwayIds)
+            {
+                if (!_nav.Highways.TryGetValue(highwayId, out var lane))
+                    continue;
+
+                if (!_nav.TryGetNode(lane.FromId, out var fromNode) || !_nav.TryGetNode(lane.ToId, out var toNode))
+                    continue;
+
+                DrawLine(fromNode.Position, toNode.Position, Color.LimeGreen, 3f);
+            }
+        }
+    }
+
+    private void DrawSquare(Vector2 center, float size, Color color)
+    {
+        int half = (int)(size * 0.5f);
+        var rect = new Rectangle((int)center.X - half, (int)center.Y - half, (int)size, (int)size);
+        HQ.SpriteBatch.Draw(_debugPixel, rect, color);
+    }
+
+    private void DrawLine(Vector2 start, Vector2 end, Color color, float thickness)
+    {
+        Vector2 delta = end - start;
+        float length = delta.Length();
+
+        if (length <= 0.001f)
+            return;
+
+        float angle = MathF.Atan2(delta.Y, delta.X);
+        HQ.SpriteBatch.Draw(_debugPixel, start, null, color, angle, Vector2.Zero, new Vector2(length, thickness), SpriteEffects.None, 0f);
     }
 }
