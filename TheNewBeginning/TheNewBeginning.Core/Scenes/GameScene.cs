@@ -20,6 +20,8 @@ using MonoGameGum;
 using MonoGameGum.GueDeriving;
 using TheNewBeginning.Core.EnemyFSM;
 using TheNewBeginning.UI;
+using MonoGame.Extended.Tiled;
+using MonoGame.Extended.Tiled.Renderers;
 
 namespace TheNewBeginning.Scenes;
 
@@ -33,6 +35,9 @@ public class GameScene : Scene
         public AgentConfig Config;
         public List<ForceSource> ForceSources = new();
     }
+
+    private TiledMap _tiledMap;
+    private TiledMapRenderer _tiledRenderer;
     private Player _player;
     private Camera _camera;
     private Enemy _enemy;
@@ -61,6 +66,9 @@ private TextureAtlas _atlas;
     }
     public override void LoadContent()
     {
+        _tiledMap = Content.Load<TiledMap>("map2");
+        _tiledRenderer = new TiledMapRenderer(HQ.GraphicsDevice, _tiledMap);
+        
         _atlas = TextureAtlas.FromFile(Content, "images/atlas-definition.xml");
         
         InitializeUI();
@@ -230,6 +238,8 @@ private float DistancePointToSegment(Vector2 point, Vector2 a, Vector2 b)
             return;
         }
         
+        _tiledRenderer.Update(gameTime);
+        
         _player.Update(gameTime);
 
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -370,6 +380,8 @@ private void CheckKeyboardInput()
     {
         HQ.GraphicsDevice.Clear(Color.CornflowerBlue);
 
+        _tiledRenderer.Draw(_camera.get_transformation(HQ.GraphicsDevice));
+        
         HQ.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: _camera.get_transformation(HQ.GraphicsDevice));
 
         _player.Draw(gameTime, HQ.SpriteBatch);

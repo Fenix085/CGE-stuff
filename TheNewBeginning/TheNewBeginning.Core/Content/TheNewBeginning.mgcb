@@ -10,6 +10,7 @@
 
 #-------------------------------- References --------------------------------#
 
+/reference:C:\Users\zlaya\.nuget\packages\monogame.extended.content.pipeline\5.5.1\tools\MonoGame.Extended.Content.Pipeline.dll
 
 #---------------------------------- Content ---------------------------------#
 
@@ -42,6 +43,11 @@
 /processorParam:PremultiplyAlpha=True
 /processorParam:TextureFormat=Compressed
 /build:Fonts/Hud.spritefont
+
+#begin grass_biome.tsx
+/importer:TiledMapTilesetImporter
+/processor:TiledMapTilesetProcessor
+/build:grass_biome.tsx
 
 #begin images/Arrow.png
 /importer:TextureImporter
@@ -93,4 +99,21 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:images/Soldier.png
+
+#begin map2.tmx
+/importer:TiledMapImporter
+/processor:TiledMapProcessor
+/build:map2.tmx
+
+#begin overworld_tileset_grass.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:overworld_tileset_grass.png
 
