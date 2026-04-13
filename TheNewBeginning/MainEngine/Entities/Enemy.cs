@@ -42,6 +42,14 @@ public class Enemy : Sprite
         if (!infiniteDetection && distance > DetectionRadius)
         {
             CurrentSpeed = 0f;
+            Velocity = Vector2.Zero;
+            return;
+        }
+
+        if (distance <= 0.001f)
+        {
+            CurrentSpeed = 0f;
+            Velocity = Vector2.Zero;
             return;
         }
 
