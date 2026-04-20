@@ -247,10 +247,11 @@ public override void Update(GameTime gameTime)
                 _resumeButton.IsFocused = true;
                 return;
             }
-
+    }
+    
     if (_pausePanel.IsVisible)
+    {    
         return;
-
     }
 
     _tiledRenderer.Update(gameTime);
