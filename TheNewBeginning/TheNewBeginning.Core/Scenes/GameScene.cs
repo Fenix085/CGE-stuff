@@ -256,11 +256,10 @@ public override void Update(GameTime gameTime)
 
     _tiledRenderer.Update(gameTime);
     
-    // NOTE: this nav rebuild runs every frame — you probably want it in Initialize/LoadContent instead.
     _nav.Clear();
 
     var node1 = new NavNode { Id = 1, Position = new Vector2(100f, 100f) };
-    var node2 = new NavNode { Id = 2, Position = new Vector2(500f, 200f) };
+    var node2 = new NavNode { Id = 2, Position = new Vector2(700f, 600f) };
     var node3 = new NavNode { Id = 3, Position = new Vector2(300f, 400f) };
 
     _nav.AddNode(node1);
@@ -269,8 +268,6 @@ public override void Update(GameTime gameTime)
 
     _nav.AddHighway(Highway.Create(id: 1, fromId: 1, toId: 2,
         fromPosition: node1.Position, toPosition: node2.Position, speedLimit: 90f));
-    _nav.AddHighway(Highway.Create(id: 2, fromId: 2, toId: 1,
-        fromPosition: node2.Position, toPosition: node1.Position, speedLimit: 90f));
     _nav.AddHighway(Highway.Create(id: 3, fromId: 2, toId: 3,
         fromPosition: node2.Position, toPosition: node3.Position, speedLimit: 90f));
 

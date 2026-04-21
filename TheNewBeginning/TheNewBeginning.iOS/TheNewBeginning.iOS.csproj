@@ -4,6 +4,8 @@
     <TargetFramework>net9.0-ios</TargetFramework>
     <SupportedOSPlatformVersion>12.2</SupportedOSPlatformVersion>
     <CodesignKey>iPhone Developer</CodesignKey>
+    <MonoGameExtendedPipelineDll>$([System.String]::Copy('$(PkgMonoGame_Extended_Content_Pipeline)\tools\MonoGame.Extended.Content.Pipeline.dll').Replace('\','/'))</MonoGameExtendedPipelineDll>
+    <MonoGameMGCBAdditionalArguments>/quiet /reference:&quot;$(MonoGameExtendedPipelineDll)&quot;</MonoGameMGCBAdditionalArguments>
   </PropertyGroup>
   <ItemGroup>
     <MonoGameContentReference Include="..\TheNewBeginning.Core\Content\TheNewBeginning.mgcb">
@@ -14,6 +16,7 @@
     <ProjectReference Include="..\TheNewBeginning.Core\TheNewBeginning.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="MonoGame.Extended.Content.Pipeline" Version="5.5.1" GeneratePathProperty="true" PrivateAssets="All" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
     <PackageReference Include="MonoGame.Framework.iOS" Version="3.8.*" />
   </ItemGroup>

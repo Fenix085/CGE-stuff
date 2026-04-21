@@ -60,6 +60,10 @@ namespace MainEngine.Navigation
             
             _highwaysById[highway.Id] = highway;
             _outgoingByNodeId[highway.FromId].Add(highway);
+            if (highway.IsTwoWay)
+            {
+                _outgoingByNodeId[highway.ToId].Add(highway);
+            }
         }
 
         public bool TryGetNode(int nodeId, out NavNode node)
@@ -142,7 +146,7 @@ namespace MainEngine.Navigation
                     if (edge.IsBlocked || float.IsInfinity(edge.Cost))
                         continue;
 
-                    int next = edge.ToId;
+                    int next = edge.FromId == current ? edge.ToId : edge.FromId;
                     if (closed.Contains(next))
                         continue;
 
@@ -198,7 +202,7 @@ namespace MainEngine.Navigation
                     return NavigationPath.Empty;
 
                 highwayIds.Add(edge.Id);
-                cursor = edge.FromId;
+                cursor = edge.FromId == cursor ? edge.ToId : edge.FromId;
                 nodeIds.Add(cursor);
             }
 

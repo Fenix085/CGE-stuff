@@ -12,6 +12,7 @@ namespace MainEngine.Navigation
         public float SpeedLimit { get; set; } = 1f;
         public float ExtraCost { get; set; } = 0f;
         public bool IsBlocked { get; set; } = false;
+        public bool IsTwoWay { get; set; } = true;
 
         public float Cost
         {
@@ -32,7 +33,8 @@ namespace MainEngine.Navigation
             Vector2 fromPosition,
             Vector2 toPosition,
             float speedLimit = 1f,
-            float extraCost = 0f)
+            float extraCost = 0f,
+            bool isTwoWay = true)
         {
             return new Highway
             {
@@ -41,7 +43,8 @@ namespace MainEngine.Navigation
                 ToId = toId,
                 Length = Vector2.Distance(fromPosition, toPosition),
                 SpeedLimit = speedLimit,
-                ExtraCost = extraCost
+                ExtraCost = extraCost,
+                IsTwoWay = isTwoWay
             };
         }
     }
