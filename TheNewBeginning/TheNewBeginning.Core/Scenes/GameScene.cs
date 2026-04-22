@@ -152,48 +152,38 @@ private TextureAtlas _atlas;
 private void CreatePausePanel()
 {
     _pausePanel = new Panel();
-    _pausePanel.Anchor(Anchor.Center);
-    _pausePanel.WidthUnits = DimensionUnitType.Absolute;
-    _pausePanel.HeightUnits = DimensionUnitType.Absolute;
-    _pausePanel.Height = 70;
-    _pausePanel.Width = 264;
+    _pausePanel.Dock(Dock.Fill);
     _pausePanel.IsVisible = false;
     _pausePanel.AddToRoot();
 
-    // TextureRegion backgroundRegion = _atlas.GetRegion("panel-background");
-
-    // NineSliceRuntime background = new NineSliceRuntime();
-    // background.Dock(Dock.Fill);
-    // background.Texture = backgroundRegion.Texture;
-    // background.TextureAddress = TextureAddress.Custom;
-    // background.TextureHeight = backgroundRegion.Height;
-    // background.TextureLeft = backgroundRegion.SourceRectangle.Left;
-    // background.TextureTop = backgroundRegion.SourceRectangle.Top;
-    // background.TextureWidth = backgroundRegion.Width;
-    // _pausePanel.AddChild(background);
+    ColoredRectangleRuntime dimOverlay = new ColoredRectangleRuntime();
+    dimOverlay.Dock(Dock.Fill);
+    dimOverlay.Color = Color.Black * 0.58f;
+    _pausePanel.AddChild(dimOverlay);
 
     TextRuntime textInstance = new TextRuntime();
     textInstance.Text = "PAUSED";
     textInstance.CustomFontFile = @"fonts/04b_30.fnt";
     textInstance.UseCustomFont = true;
     textInstance.FontScale = 0.5f;
-    textInstance.X = 10f;
-    textInstance.Y = 10f;
+    textInstance.Anchor(Anchor.Center);
+    textInstance.X = 0f;
+    textInstance.Y = -14f;
     _pausePanel.AddChild(textInstance);
 
     _resumeButton = new AnimatedButton(_atlas);
     _resumeButton.Text = "RESUME";
-    _resumeButton.Anchor(Anchor.BottomLeft);
-    _resumeButton.X = 9f;
-    _resumeButton.Y = -9f;
+    _resumeButton.Anchor(Anchor.Center);
+    _resumeButton.X = -38f;
+    _resumeButton.Y = 18f;
     _resumeButton.Click += HandleResumeButtonClicked;
     _pausePanel.AddChild(_resumeButton);
 
     AnimatedButton quitButton = new AnimatedButton(_atlas);
     quitButton.Text = "QUIT";
-    quitButton.Anchor(Anchor.BottomRight);
-    quitButton.X = -9f;
-    quitButton.Y = -9f;
+    quitButton.Anchor(Anchor.Center);
+    quitButton.X = 38f;
+    quitButton.Y = 18f;
     quitButton.Click += HandleQuitButtonClicked;
 
     _pausePanel.AddChild(quitButton);
@@ -280,10 +270,6 @@ public override void Update(GameTime gameTime)
 
     _debugPixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
     _debugPixel.SetData(new[] { Color.White });
-
-    // Hard exit (kept from second Update; note: first Update used pause instead)
-    if (HQ.Input.Keyboard.IsKeyDown(Keys.Escape))
-        HQ.Instance.Exit();
 
     if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.F3))
         _drawNavigationDebug = !_drawNavigationDebug;

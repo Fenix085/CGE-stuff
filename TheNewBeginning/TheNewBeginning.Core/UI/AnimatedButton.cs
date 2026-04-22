@@ -5,6 +5,7 @@ using Gum.Forms.Controls;
 using Gum.Forms.DefaultVisuals.V3;
 using Gum.Graphics.Animation;
 using Gum.Managers;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using MonoGameGum.GueDeriving;
 using MainEngine.Graphics;
@@ -13,34 +14,38 @@ namespace TheNewBeginning.UI;
 
 internal class AnimatedButton : Button
 {
+    private readonly NineSliceRuntime _background;
+    private readonly TextRuntime _textInstance;
+    private readonly ButtonVisual _buttonVisual;
+    private Color _backgroundColor = Color.White;
+    private Color _textColor = new Color(70, 86, 130);
+
     public AnimatedButton(TextureAtlas atlas)
     {
  
-        ButtonVisual buttonVisual = (ButtonVisual)Visual;
+        _buttonVisual = (ButtonVisual)Visual;
 
-        buttonVisual.Height = 14f;
-        buttonVisual.HeightUnits = DimensionUnitType.Absolute;
-        buttonVisual.Width = 21f;
-        buttonVisual.WidthUnits = DimensionUnitType.RelativeToChildren;
+        _buttonVisual.Height = 17f;
+        _buttonVisual.HeightUnits = DimensionUnitType.Absolute;
+        _buttonVisual.Width = 25f;
+        _buttonVisual.WidthUnits = DimensionUnitType.RelativeToChildren;
 
         TextureRegion unfocusedTextureRegion = atlas.GetRegion("unfocused-button");
         
-        NineSliceRuntime background = buttonVisual.Background;
-        background.Texture = unfocusedTextureRegion.Texture;
-        background.TextureAddress = TextureAddress.Custom;
-        background.Color = Microsoft.Xna.Framework.Color.White;
+        _background = _buttonVisual.Background;
+        _background.Texture = unfocusedTextureRegion.Texture;
+        _background.TextureAddress = TextureAddress.Custom;
+        _background.Color = _backgroundColor;
 
-        TextRuntime textInstance = buttonVisual.TextInstance;
-        textInstance.Text = "START";
-        textInstance.Blue = 130;
-        textInstance.Green = 86;
-        textInstance.Red = 70;
-        textInstance.UseCustomFont = true;
-        textInstance.CustomFontFile = "fonts/04b_30.fnt";
-        textInstance.FontScale = 0.25f;
-        textInstance.Anchor(Gum.Wireframe.Anchor.Center);
-        textInstance.Width = 0;
-        textInstance.WidthUnits = DimensionUnitType.RelativeToChildren;
+        _textInstance = _buttonVisual.TextInstance;
+        _textInstance.Text = "START";
+        _textInstance.Color = _textColor;
+        _textInstance.UseCustomFont = true;
+        _textInstance.CustomFontFile = "fonts/04b_30.fnt";
+        _textInstance.FontScale = 0.32f;
+        _textInstance.Anchor(Gum.Wireframe.Anchor.Center);
+        _textInstance.Width = 0;
+        _textInstance.WidthUnits = DimensionUnitType.RelativeToChildren;
 
         AnimationChain unfocusedAnimation = new AnimationChain();
         unfocusedAnimation.Name = nameof(unfocusedAnimation);
@@ -74,36 +79,58 @@ internal class AnimatedButton : Button
             focusedAnimation.Add(frame);
         }
 
-        background.AnimationChains = new AnimationChainList
+        _background.AnimationChains = new AnimationChainList
         {
             unfocusedAnimation,
             focusedAnimation
         };
 
-        buttonVisual.ButtonCategory.ResetAllStates();
+        _buttonVisual.ButtonCategory.ResetAllStates();
 
-        StateSave enabledState = buttonVisual.States.Enabled;
+        StateSave enabledState = _buttonVisual.States.Enabled;
         enabledState.Apply = () =>
         {
-            background.CurrentChainName = unfocusedAnimation.Name;
+            _background.CurrentChainName = unfocusedAnimation.Name;
+            ApplyPalette();
         };
 
-        StateSave focusedState = buttonVisual.States.Focused;
+        StateSave focusedState = _buttonVisual.States.Focused;
         focusedState.Apply = () =>
         {
-            background.CurrentChainName = focusedAnimation.Name;
-            background.Animate = true;
+            _background.CurrentChainName = focusedAnimation.Name;
+            _background.Animate = true;
+            ApplyPalette();
         };
 
-        StateSave highlightedFocused = buttonVisual.States.HighlightedFocused;
+        StateSave highlightedFocused = _buttonVisual.States.HighlightedFocused;
         highlightedFocused.Apply = focusedState.Apply;
 
-        StateSave highlighted = buttonVisual.States.Highlighted;
+        StateSave highlighted = _buttonVisual.States.Highlighted;
         highlighted.Apply = enabledState.Apply;
 
         KeyDown += HandleKeyDown;
 
-        buttonVisual.RollOn += HandleRollOn;
+        _buttonVisual.RollOn += HandleRollOn;
+    }
+
+    public void SetPalette(Color backgroundColor, Color textColor)
+    {
+        _backgroundColor = backgroundColor;
+        _textColor = textColor;
+
+        ApplyPalette();
+    }
+
+    public void SetVisualSize(float height, float textScale)
+    {
+        _buttonVisual.Height = height;
+        _textInstance.FontScale = textScale;
+    }
+
+    private void ApplyPalette()
+    {
+        _background.Color = _backgroundColor;
+        _textInstance.Color = _textColor;
     }
 
     private void HandleKeyDown(object sender, KeyEventArgs e)
