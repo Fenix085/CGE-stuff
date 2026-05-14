@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../MainEngine/MainEngine.csproj" />
+  <Project Path="LILITH.Core/LILITH.Core.csproj" />
+</Solution>
