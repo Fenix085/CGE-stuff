@@ -12,6 +12,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MainEngine\MainEngine.csproj" />
+    <ProjectReference Include="..\..\MainEngine\MainEngine.csproj" />
   </ItemGroup>
 </Project>
