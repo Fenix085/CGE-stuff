@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="../MainEngine/MainEngine.csproj" />
   <Project Path="LILITH.Core/LILITH.Core.csproj" />
+  <Project Path="LILITH.Sandbox/LILITH.Sandbox.csproj" />
 </Solution>
