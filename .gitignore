@@ -488,4 +488,4 @@ Thumbs.db
 
 /LILITH/LILITH.Sandbox/
 *.lscache
-*.lscache
+MainEngine/*.lscache
