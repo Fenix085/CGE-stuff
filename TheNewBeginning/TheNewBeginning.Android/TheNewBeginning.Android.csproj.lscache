@@ -53,10 +53,6 @@ TemporaryDependencyNodeTargetIdentifier=net9.0-android
 
 [sourceFiles]
 MainActivity.cs
-obj/Debug/net9.0-android/
- .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
- TheNewBeginning.Android.AssemblyInfo.cs
- __Microsoft.Android.Resource.Designer.cs
 
 [metadataReferences]
 ../
