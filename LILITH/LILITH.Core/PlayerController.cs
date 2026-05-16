@@ -35,13 +35,18 @@ public class PlayerController
 
     // ── Update / Draw ─────────────────────────────────────────────────────
 
-    public void Update(GameTime gameTime, Vector2 cursorWorld)
-    {
-        Player.Update(gameTime);
+    public void Update(GameTime gameTime, Vector2 moveDirection, Vector2 cursorWorld)
+{
+    Player.Update(gameTime);
 
-        foreach (var ability in _abilities)
+    foreach (var ability in _abilities)
+    {
+        if (ability is SatelliteAbility || ability is AuraAbility)
             ability.Update(gameTime, Player.Center, cursorWorld);
+        else
+            ability.Update(gameTime, Player.Center, moveDirection);
     }
+}
 
     public void Draw(GameTime gameTime, SpriteBatch sb)
     {

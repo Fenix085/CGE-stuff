@@ -25,7 +25,7 @@ public class GameScene : Scene
     private SpriteFont _font  = null!;
     private bool       _isPaused;
 
-    private const int   CARD_COUNT  = 3;
+    private const int   CARD_COUNT  = 4;
     private const float CAMERA_LERP = 0.1f;
 
     private IAbility[] _currentCards = Array.Empty<IAbility>();
@@ -68,7 +68,7 @@ public class GameScene : Scene
         if (_isPaused) return;
 
         Vector2 cursorWorld = GetCursorWorld();
-        _controller.Update(gameTime, cursorWorld);
+        _controller.Update(gameTime, _controller.Player.LastMoveDirection, GetCursorWorld());
 
         _camera.Pos = Vector2.Lerp(_camera.Pos, _controller.Player.Center, CAMERA_LERP);
 
@@ -122,7 +122,8 @@ public class GameScene : Scene
     {
         new SatelliteAbility(),
         new AuraAbility(),
-        new TrailAbility()
+        new TrailAbility(),
+        new SlashAbility()
     };
 
     private IAbility[] GetRandomCards()

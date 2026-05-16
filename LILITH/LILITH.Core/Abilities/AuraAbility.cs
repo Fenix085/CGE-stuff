@@ -7,7 +7,7 @@ namespace LILITH.Abilities;
 public class AuraAbility : IAbility
 {
     public string Name        => "Aura";
-    public string Description => "Produce an aura around\nthe player. Damages enemies on contact.";
+    public string Description => "Produce an aura around\nthe player. Damages enemies\n on contact.";
 
     private float _radius;
     private float _pulseTimer;
