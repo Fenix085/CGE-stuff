@@ -1,51 +1,25 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
+using LILITH.Core.Scenes;
+using MainEngine;
+using Microsoft.Xna.Framework;
 
 namespace LILITH.Core;
 
-public class Game1 : Game
+/// <summary>
+/// Точка входа. Наследуется от HQ чтобы Input и Audio работали.
+/// Только создаёт GameScene и передаёт управление ей через HQ.ChangeScene().
+/// </summary>
+public class Game1 : HQ
 {
-    private GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
-
     public Game1()
+        : base("LILITH", 1280, 720, false)
     {
-        _graphics = new GraphicsDeviceManager(this);
-        Content.RootDirectory = "Content";
-        IsMouseVisible = true;
     }
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
+        base.Initialize(); // HQ инициализирует Input, Audio, GraphicsDevice
 
-        base.Initialize();
-    }
-
-    protected override void LoadContent()
-    {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-        // TODO: use this.Content to load your game content here
-    }
-
-    protected override void Update(GameTime gameTime)
-    {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-            Exit();
-
-        // TODO: Add your update logic here
-
-        base.Update(gameTime);
-    }
-
-    protected override void Draw(GameTime gameTime)
-    {
-        GraphicsDevice.Clear(Color.CornflowerBlue);
-
-        // TODO: Add your drawing code here
-
-        base.Draw(gameTime);
+        // Запускаем игровую сцену
+        HQ.ChangeScene(new GameScene());
     }
 }
