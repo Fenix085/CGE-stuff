@@ -3,7 +3,6 @@ using MainEngine;
 using MainEngine.Entities;
 using MainEngine.FlockEnemy;
 using MainEngine.Graphics;
-using MainEngine.Projectile;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -22,33 +21,18 @@ public class Boss : Enemy
     }
 
     /// <summary>
-    /// Assign before the first Update so the wall attack has a texture to use.
+    /// Warning circles active this frame (telegraphs + flashes).
+    /// The scene draws these as colored rings/fills.
     /// </summary>
-    public TextureRegion WallProjectileRegion
-    {
-        set => _fsm.Context.WallProjectileRegion = value;
-    }
-
-    /// <summary>
-    /// Growing warning circle during the charge phase, or null.
-    /// The scene can draw this as a red tinted circle.
-    /// </summary>
-    public Circle? WarningZone => _fsm.ActiveWarningZone;
+    public IReadOnlyList<Circle> WarningZones => _fsm.Context.WarningZones;
 
     /// <summary>
     /// Damage the boss dealt to the player this frame.
-    /// Read after Update, then it resets next frame.
     /// </summary>
     public int PendingPlayerDamage => _fsm.Context.PendingPlayerDamage;
 
     /// <summary>
-    /// Projectiles spawned by the boss this frame.
-    /// The scene should move these into its own list after Update.
-    /// </summary>
-    public List<Projectile> SpawnedProjectiles => _fsm.Context.BossProjectiles;
-
-    /// <summary>
-    /// Force sources the boss produced this frame (e.g. explosion shockwave).
+    /// Force sources produced this frame (explosion shockwaves).
     /// </summary>
     public List<ForceSource> ActiveForceSources => _fsm.Context.ActiveForceSources;
 
