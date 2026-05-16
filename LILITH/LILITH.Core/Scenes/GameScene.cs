@@ -114,30 +114,48 @@ public class GameScene : Scene
     }
 
     private void HandleLevelUp()
-    {
-        _isPaused = true;
+{
+    _isPaused = true;
 
-        var satellite = new SatelliteAbility();
-        _levelUp.Show(HQ.GraphicsDevice.Viewport, new[] { satellite, satellite, satellite });
-    }
+    var cards = new IAbility[]
+    {
+        new SatelliteAbility(),
+        new AuraAbility(),
+        new SatelliteAbility()
+    };
+
+    _levelUp.Show(HQ.GraphicsDevice.Viewport, cards);
+}
 
     private void HandleCardChosen(int cardIndex)
+{
+    IAbility[] cards = new IAbility[]
     {
-        var satellite = _controller.GetAbility<SatelliteAbility>();
+        new SatelliteAbility(),
+        new AuraAbility(),
+        new SatelliteAbility()
+    };
 
-        if (satellite != null)
-        {
-            // Способность уже есть — прокачиваем
-            satellite.Upgrade();
-        }
-        else
-        {
-            // Первый раз — добавляем
-            _controller.AddAbility(new SatelliteAbility());
-        }
+    IAbility chosen = cards[cardIndex];
 
-        _isPaused = false;
+    
+    var existing = _controller.GetAbility<IAbility>();
+
+    // Проверяем по типу
+    foreach (var ability in _controller.GetAllAbilities())
+    {
+        if (ability.GetType() == chosen.GetType())
+        {
+            ability.Upgrade();
+            _isPaused = false;
+            return;
+        }
     }
+
+    // Способности ещё нет — добавляем
+    _controller.AddAbility(chosen);
+    _isPaused = false;
+}
 
     protected override void Dispose(bool disposing)
     {

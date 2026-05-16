@@ -24,7 +24,7 @@ public class PlayerController
     // ── Способности ───────────────────────────────────────────────────────
 
     public void AddAbility(IAbility ability) => _abilities.Add(ability);
-
+    public IReadOnlyList<IAbility> GetAllAbilities() => _abilities;
     // Найти существующую способность того же типа — для Upgrade
     public T? GetAbility<T>() where T : class, IAbility
     {
