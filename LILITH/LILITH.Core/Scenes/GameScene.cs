@@ -21,6 +21,7 @@ public class GameScene : Scene
     private LevelUpScreen     _levelUp    = null!;
 
     private Texture2D _pixel = null!;
+    private SpriteFont _font = null!;
     private bool      _isPaused;
 
     private const float CAMERA_LERP = 0.1f;
@@ -31,6 +32,7 @@ public class GameScene : Scene
     {
         _pixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
+        _font = Content.Load<SpriteFont>("DefaultFont");
 
         var player = new Player(new Vector2(640, 360), hp: 100, pixel: _pixel);
 
@@ -98,7 +100,8 @@ public class GameScene : Scene
                     _controller.Player.RequiredXp,
                     _controller.Player.Level);
 
-        _levelUp.Draw(HQ.SpriteBatch, _pixel, null, HQ.GraphicsDevice.Viewport);
+        _levelUp.Draw(HQ.SpriteBatch, _pixel, _font, HQ.GraphicsDevice.Viewport);
+        
 
         HQ.SpriteBatch.End();
     }
@@ -113,7 +116,9 @@ public class GameScene : Scene
     private void HandleLevelUp()
     {
         _isPaused = true;
-        _levelUp.Show(HQ.GraphicsDevice.Viewport);
+
+        var satellite = new SatelliteAbility();
+        _levelUp.Show(HQ.GraphicsDevice.Viewport, new[] { satellite, satellite, satellite });
     }
 
     private void HandleCardChosen(int cardIndex)

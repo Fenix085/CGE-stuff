@@ -2,13 +2,11 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Collections.Generic;
+using LILITH.Abilities;
 
 namespace LILITH.UI;
 
-/// <summary>
-/// Экран выбора улучшения при повышении уровня.
-/// Показывает 3 карточки, игрок кликает — экран закрывается.
-/// </summary>
 public class LevelUpScreen
 {
     public bool IsVisible { get; private set; }
@@ -26,6 +24,10 @@ public class LevelUpScreen
     private float _showTimer;
     private const float SHOW_DURATION = 0.35f;
 
+    // Данные карточек — заполняются при Show()
+    private readonly string[] _cardNames        = new string[CARD_COUNT];
+    private readonly string[] _cardDescriptions = new string[CARD_COUNT];
+
     private static readonly Color OverlayColor = new Color(0,   0,   0,   160);
     private static readonly Color CardBg        = new Color(30,  30,  50,  240);
     private static readonly Color CardHover     = new Color(50,  50,  80,  255);
@@ -34,7 +36,8 @@ public class LevelUpScreen
 
     private MouseState _prevMouse;
 
-    public void Show(Viewport viewport)
+    /// <param name="cards">Список способностей для отображения (до 3 штук).</param>
+    public void Show(Viewport viewport, IReadOnlyList<IAbility> cards)
     {
         IsVisible  = true;
         _showTimer = 0f;
@@ -44,7 +47,21 @@ public class LevelUpScreen
         int startY     = (viewport.Height - CARD_HEIGHT) / 2;
 
         for (int i = 0; i < CARD_COUNT; i++)
-            _cardRects[i] = new Rectangle(startX + i * (CARD_WIDTH + CARD_GAP), startY, CARD_WIDTH, CARD_HEIGHT);
+        {
+            _cardRects[i] = new Rectangle(
+                startX + i * (CARD_WIDTH + CARD_GAP), startY, CARD_WIDTH, CARD_HEIGHT);
+
+            if (i < cards.Count)
+            {
+                _cardNames[i]        = cards[i].Name;
+                _cardDescriptions[i] = cards[i].Description;
+            }
+            else
+            {
+                _cardNames[i]        = "???";
+                _cardDescriptions[i] = "";
+            }
+        }
     }
 
     public void Hide() => IsVisible = false;
@@ -63,8 +80,8 @@ public class LevelUpScreen
             if (_cardRects[i].Contains(mouse.Position))
             { _hoveredCard = i; break; }
 
-        bool justClicked = mouse.LeftButton     == ButtonState.Pressed
-                        && _prevMouse.LeftButton == ButtonState.Released;
+        bool justClicked = mouse.LeftButton      == ButtonState.Pressed
+                        && _prevMouse.LeftButton  == ButtonState.Released;
 
         if (justClicked && _hoveredCard >= 0)
         {
@@ -81,8 +98,9 @@ public class LevelUpScreen
 
         float alpha = MathHelper.Clamp(_showTimer / SHOW_DURATION, 0f, 1f);
 
-        // Затемнение фона
-        sb.Draw(pixel, new Rectangle(0, 0, viewport.Width, viewport.Height), OverlayColor * alpha);
+        sb.Draw(pixel,
+            new Rectangle(0, 0, viewport.Width, viewport.Height),
+            OverlayColor * alpha);
 
         for (int i = 0; i < CARD_COUNT; i++)
         {
@@ -91,7 +109,8 @@ public class LevelUpScreen
             if (hovered) rect.Y -= 8;
 
             // Тень
-            sb.Draw(pixel, new Rectangle(rect.X + 4, rect.Y + 4, rect.Width, rect.Height),
+            sb.Draw(pixel,
+                new Rectangle(rect.X + 4, rect.Y + 4, rect.Width, rect.Height),
                 new Color(0, 0, 0, 120) * alpha);
 
             // Фон
@@ -100,10 +119,10 @@ public class LevelUpScreen
             // Рамка
             Color border = hovered ? CardBorderHov : CardBorder;
             const int B = 2;
-            sb.Draw(pixel, new Rectangle(rect.X,              rect.Y,                   rect.Width, B),  border * alpha);
-            sb.Draw(pixel, new Rectangle(rect.X,              rect.Y + rect.Height - B, rect.Width, B),  border * alpha);
-            sb.Draw(pixel, new Rectangle(rect.X,              rect.Y,                   B, rect.Height), border * alpha);
-            sb.Draw(pixel, new Rectangle(rect.X + rect.Width - B, rect.Y,               B, rect.Height), border * alpha);
+            sb.Draw(pixel, new Rectangle(rect.X,                  rect.Y,                   rect.Width, B),  border * alpha);
+            sb.Draw(pixel, new Rectangle(rect.X,                  rect.Y + rect.Height - B, rect.Width, B),  border * alpha);
+            sb.Draw(pixel, new Rectangle(rect.X,                  rect.Y,                   B, rect.Height), border * alpha);
+            sb.Draw(pixel, new Rectangle(rect.X + rect.Width - B, rect.Y,                   B, rect.Height), border * alpha);
 
             // Иконка-заглушка
             Color iconColor = i switch
@@ -112,13 +131,90 @@ public class LevelUpScreen
                 1 => new Color(255, 100, 80),
                 _ => new Color(180, 80,  255)
             };
-            sb.Draw(pixel, new Rectangle(rect.X + 30, rect.Y + 20, CARD_WIDTH - 60, 80), iconColor * alpha);
+            sb.Draw(pixel,
+                new Rectangle(rect.X + 20, rect.Y + 15, CARD_WIDTH - 40, 70),
+                iconColor * alpha);
 
             if (font != null)
             {
-                sb.DrawString(font, $"КАРТОЧКА {i + 1}", new Vector2(rect.X + 10, rect.Y + 115), Color.Yellow * alpha);
-                sb.DrawString(font, "Улучшение",         new Vector2(rect.X + 10, rect.Y + 145), Color.White  * alpha);
+                // Заголовок — по центру карточки
+                Vector2 titleSize = font.MeasureString(_cardNames[i]);
+                Vector2 titlePos  = new Vector2(
+                    rect.X + (CARD_WIDTH - titleSize.X) / 2f,
+                    rect.Y + 95f);
+
+                sb.DrawString(font, _cardNames[i], titlePos, Color.Yellow * alpha);
+
+                // Разделитель
+                sb.Draw(pixel,
+                    new Rectangle(rect.X + 10, (int)titlePos.Y + (int)titleSize.Y + 4,
+                                  CARD_WIDTH - 20, 1),
+                    Color.Gray * alpha);
+
+                // Описание — мелким шрифтом, с переносами
+                DrawWrappedText(sb, font, _cardDescriptions[i],
+                    new Vector2(rect.X + 10, titlePos.Y + titleSize.Y + 10),
+                    CARD_WIDTH - 20,
+                    Color.LightGray * alpha * 0.85f);
             }
         }
+    }
+
+    /// <summary>Рисует текст с переносом по ширине.</summary>
+    private static void DrawWrappedText(SpriteBatch sb, SpriteFont font,
+                                        string text, Vector2 position,
+                                        float maxWidth, Color color)
+    {
+        string[] words   = text.Split(' ');
+        string   line    = "";
+        float    lineY   = position.Y;
+        float    lineH   = font.MeasureString("A").Y + 2f;
+
+        foreach (string word in words)
+        {
+            // Учитываем явные переносы \n
+            if (word.Contains('\n'))
+            {
+                string[] parts = word.Split('\n');
+                foreach (string part in parts)
+                {
+                    string test = line.Length > 0 ? line + " " + part : part;
+                    if (font.MeasureString(test).X > maxWidth && line.Length > 0)
+                    {
+                        sb.DrawString(font, line, new Vector2(position.X, lineY), color);
+                        lineY += lineH;
+                        line   = part;
+                    }
+                    else
+                    {
+                        line = test;
+                    }
+                    // Явный перенос строки
+                    if (part != parts[^1])
+                    {
+                        sb.DrawString(font, line, new Vector2(position.X, lineY), color);
+                        lineY += lineH;
+                        line   = "";
+                    }
+                }
+            }
+            else
+            {
+                string test = line.Length > 0 ? line + " " + word : word;
+                if (font.MeasureString(test).X > maxWidth && line.Length > 0)
+                {
+                    sb.DrawString(font, line, new Vector2(position.X, lineY), color);
+                    lineY += lineH;
+                    line   = word;
+                }
+                else
+                {
+                    line = test;
+                }
+            }
+        }
+
+        if (line.Length > 0)
+            sb.DrawString(font, line, new Vector2(position.X, lineY), color);
     }
 }
