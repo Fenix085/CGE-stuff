@@ -8,8 +8,8 @@ namespace LILITH.Core.Enemies.Tank
         public Tank Tank { get; }
         public Vector2 PlayerPosition { get; set; }
         public bool PlayerIsDead { get; set; }
+        public float RepathTimer { get; set; }
 
-        // ── FSM-driven outputs read by MainScene ──
         public bool ShouldSpawnAgents { get; set; }
         public bool ShouldFlockAttackPlayer { get; set; }
         public float FlockSpeed { get; set; }
@@ -18,10 +18,7 @@ namespace LILITH.Core.Enemies.Tank
         public float PlayerForceRadius { get; set; }
         public float PlayerForceStrength { get; set; }
 
-        public TankContext(Tank tank)
-        {
-            Tank = tank;
-        }
+        public TankContext(Tank tank) { Tank = tank; }
 
         public float DistanceToPlayer() =>
             Vector2.Distance(Tank.Position, PlayerPosition);
@@ -32,7 +29,6 @@ namespace LILITH.Core.Enemies.Tank
         private readonly TankContext _context;
         private readonly FiniteStateMachine<TankContext> _fsm = new();
 
-        // ── Public read-outs for MainScene ──
         public bool ShouldSpawnAgents => _context.ShouldSpawnAgents;
         public bool ShouldFlockAttackPlayer => _context.ShouldFlockAttackPlayer;
         public float FlockSpeed => _context.FlockSpeed;
@@ -50,43 +46,31 @@ namespace LILITH.Core.Enemies.Tank
             var attack = new AttackState();
             var dead = new DeadState();
 
-            // ── Idle transitions ──
             idle.AddTransition(new FSMTransition<TankContext>(
                 investigate,
                 ctx => !ctx.PlayerIsDead
                        && ctx.DistanceToPlayer() <= ctx.Tank.DetectionRadius));
-
             idle.AddTransition(new FSMTransition<TankContext>(
-                dead,
-                ctx => ctx.Tank.Health.IsDead));
+                dead, ctx => ctx.Tank.Health.IsDead));
 
-            // ── Investigate transitions ──
             investigate.AddTransition(new FSMTransition<TankContext>(
                 attack,
                 ctx => !ctx.PlayerIsDead
                        && ctx.DistanceToPlayer() <= ctx.Tank.FollowRadius));
-
             investigate.AddTransition(new FSMTransition<TankContext>(
                 idle,
                 ctx => ctx.PlayerIsDead
                        || ctx.DistanceToPlayer() > ctx.Tank.DetectionRadius));
-
             investigate.AddTransition(new FSMTransition<TankContext>(
-                dead,
-                ctx => ctx.Tank.Health.IsDead));
+                dead, ctx => ctx.Tank.Health.IsDead));
 
-            // ── Attack transitions ──
             attack.AddTransition(new FSMTransition<TankContext>(
                 investigate,
                 ctx => ctx.DistanceToPlayer() > ctx.Tank.FollowRadius));
-
             attack.AddTransition(new FSMTransition<TankContext>(
-                idle,
-                ctx => ctx.PlayerIsDead));
-
+                idle, ctx => ctx.PlayerIsDead));
             attack.AddTransition(new FSMTransition<TankContext>(
-                dead,
-                ctx => ctx.Tank.Health.IsDead));
+                dead, ctx => ctx.Tank.Health.IsDead));
 
             _fsm.SetInitialState(idle, _context);
         }
@@ -98,14 +82,6 @@ namespace LILITH.Core.Enemies.Tank
             _fsm.Update(_context, gameTime);
         }
 
-        // ────────────────────────────────────────
-        //  States
-        // ────────────────────────────────────────
-
-        /// <summary>
-        /// Player is far away. Tank sits still, no spawning,
-        /// agents drift lazily around the tank.
-        /// </summary>
         private sealed class IdleState : FSMState<TankContext>
         {
             public override void OnEnter(TankContext ctx)
@@ -126,8 +102,7 @@ namespace LILITH.Core.Enemies.Tank
         }
 
         /// <summary>
-        /// Player entered detection range. Tank begins moving,
-        /// agents spawn and flock at moderate speed.
+        /// Uses highway navigation to reach the player.
         /// </summary>
         private sealed class InvestigateState : FSMState<TankContext>
         {
@@ -138,20 +113,26 @@ namespace LILITH.Core.Enemies.Tank
                 ctx.FlockSpeed = 60f;
                 ctx.TankMoveSpeed = 40f;
                 ctx.ApplyPlayerForce = false;
-                ctx.PlayerForceRadius = 0f;
-                ctx.PlayerForceStrength = 0f;
+                ctx.RepathTimer = 0f;
             }
 
             public override void OnUpdate(TankContext ctx, GameTime gameTime)
             {
                 float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
-                ctx.Tank.MoveToward(ctx.PlayerPosition, dt, ctx.TankMoveSpeed);
+                float timer = ctx.RepathTimer;
+
+                EnemyNavigation.NavigateOrPursue(
+                    ctx.Tank, ctx.Tank.NavFollower,
+                    ctx.PlayerPosition, dt, ctx.TankMoveSpeed,
+                    directPursuitRadius: ctx.Tank.FollowRadius,
+                    repathTimer: ref timer);
+
+                ctx.RepathTimer = timer;
             }
         }
 
         /// <summary>
-        /// Player is close. Agents actively chase and repel off
-        /// the player; tank pushes in at full speed.
+        /// Close range — direct pursuit, no pathfinding needed.
         /// </summary>
         private sealed class AttackState : FSMState<TankContext>
         {
@@ -164,6 +145,7 @@ namespace LILITH.Core.Enemies.Tank
                 ctx.ApplyPlayerForce = true;
                 ctx.PlayerForceRadius = 300f;
                 ctx.PlayerForceStrength = 12f;
+                ctx.Tank.NavFollower?.Clear();
             }
 
             public override void OnUpdate(TankContext ctx, GameTime gameTime)
@@ -173,9 +155,6 @@ namespace LILITH.Core.Enemies.Tank
             }
         }
 
-        /// <summary>
-        /// Tank is dead. Everything stops.
-        /// </summary>
         private sealed class DeadState : FSMState<TankContext>
         {
             public override void OnEnter(TankContext ctx)
@@ -185,9 +164,7 @@ namespace LILITH.Core.Enemies.Tank
                 ctx.FlockSpeed = 0f;
                 ctx.TankMoveSpeed = 0f;
                 ctx.ApplyPlayerForce = false;
-
-                if (!ctx.Tank.IsDead)
-                    ctx.Tank.ApplyDeath();
+                if (!ctx.Tank.IsDead) ctx.Tank.ApplyDeath();
             }
         }
     }

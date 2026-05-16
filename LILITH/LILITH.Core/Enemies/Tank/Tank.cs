@@ -2,7 +2,9 @@ using System.Collections.Generic;
 using MainEngine.Entities;
 using MainEngine.FlockEnemy;
 using MainEngine.Graphics;
+using MainEngine.Navigation;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace LILITH.Core.Enemies.Tank
 {
@@ -13,10 +15,10 @@ namespace LILITH.Core.Enemies.Tank
         public float AgentSpawnIntervalSeconds { get; set; } = 2f;
         public int MaxAgents { get; set; } = 15;
 
-        /// <summary>
-        /// Set by the FSM each frame to allow or block spawning.
-        /// </summary>
+        private readonly TankFSM _fsm;
+
         public bool CanSpawn { get; set; }
+        public NavigationFollower NavFollower { get; set; }
 
         public float AgentAttractionRadius { get; set; } = 275f;
         public float AgentAttractionForce { get; set; } = 30f;
@@ -34,6 +36,7 @@ namespace LILITH.Core.Enemies.Tank
             : base(sprite, position, hp: 200)
         {
             CurrentSpeed = 0f;
+            _fsm = new TankFSM(this);
         }
 
         public override void Update(GameTime gameTime)
@@ -69,6 +72,44 @@ namespace LILITH.Core.Enemies.Tank
             _agents.Add(agent);
         }
 
+        public void UpdateWithFSM(
+            GameTime gameTime,
+            Vector2 playerPosition,
+            bool playerIsDead,
+            AgentConfig agentConfig,
+            List<ForceSource> sharedForceSources)
+        {
+            _fsm.Update(playerPosition, playerIsDead, gameTime);
+
+            CanSpawn = _fsm.ShouldSpawnAgents;
+            Update(gameTime);
+
+            agentConfig.AgentSpeed = _fsm.FlockSpeed;
+            UpdateAgentCenters();
+
+            sharedForceSources.Clear();
+
+            if (_fsm.ApplyPlayerForce)
+                sharedForceSources.Add(new ForceSource(
+                    playerPosition,
+                    _fsm.PlayerForceRadius,
+                    _fsm.PlayerForceStrength));
+
+            AddAgentForceSources(sharedForceSources);
+
+            if (_fsm.ShouldFlockAttackPlayer)
+            {
+                float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+                foreach (var agent in _agents)
+                    agent.MoveToward(playerPosition, dt, _fsm.FlockSpeed);
+            }
+
+            Agent.Process(new List<Agent>(_agents), agentConfig, sharedForceSources);
+
+            foreach (var agent in _agents)
+                agent.Update(gameTime);
+        }
+
         public void UpdateAgentCenters()
         {
             for (int i = 0; i < _agents.Count; i++)
@@ -85,6 +126,15 @@ namespace LILITH.Core.Enemies.Tank
 
             if (AgentRepulsionRadius > 0f && AgentRepulsionForce != 0f)
                 sources.Add(new ForceSource(Position, AgentRepulsionRadius, AgentRepulsionForce));
+        }
+
+        public void DrawWithAgents(GameTime gameTime, SpriteBatch spriteBatch)
+        {
+            if (!IsDead)
+                Draw(gameTime, spriteBatch);
+
+            foreach (var agent in _agents)
+                agent.Draw(gameTime, spriteBatch);
         }
 
         public bool RemoveAgent(Agent agent) => _agents.Remove(agent);
