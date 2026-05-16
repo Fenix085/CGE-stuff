@@ -121,7 +121,7 @@ public class GameScene : Scene
     {
         new SatelliteAbility(),
         new AuraAbility(),
-        new SatelliteAbility()
+        new TrailAbility()
     };
 
     _levelUp.Show(HQ.GraphicsDevice.Viewport, cards);
@@ -133,7 +133,7 @@ public class GameScene : Scene
     {
         new SatelliteAbility(),
         new AuraAbility(),
-        new SatelliteAbility()
+        new TrailAbility()
     };
 
     IAbility chosen = cards[cardIndex];
