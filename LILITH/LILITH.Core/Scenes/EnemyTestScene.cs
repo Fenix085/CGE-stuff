@@ -41,7 +41,7 @@ namespace LILITH.Core.Scenes
             // ── Player ──
             var playerRegion = MakeSolidRegion(24, 24, Color.CornflowerBlue);
             var playerSprite = MakeAnimSprite(playerRegion);
-            _player = new Player(playerSprite, new Vector2(200, 200), 3);
+            _player = new Player(playerSprite, new Vector2(200, 200), 50);
 
             // ── Flocking config (shared by all tanks) ──
             _agentConfig = new AgentConfig
@@ -71,7 +71,7 @@ namespace LILITH.Core.Scenes
             _spawner.AddSpawnPoint(new Vector2(700, 500));
             _spawner.AddSpawnPoint(new Vector2(100, 500));
 
-            // Register factories — each creates a configured enemy at a position
+            // Register factories
             _spawner.RegisterFactory(EnemyType.Walker, pos =>
             {
                 var s = MakeAnimSprite(MakeSolidRegion(16, 16, Color.Green));
@@ -108,6 +108,8 @@ namespace LILITH.Core.Scenes
                 {
                     AgentSpawnIntervalSeconds = 2f,
                     MaxAgents = 15,
+                    AgentDamage = 1,
+                    AgentHitRadius = 10f,
                     AgentFactory = aPos =>
                     {
                         var agent = new Agent(_agentRegion, aPos);
@@ -157,8 +159,7 @@ namespace LILITH.Core.Scenes
         {
             _player.Update(gameTime);
 
-            // Spawner ticks non-tank enemies internally;
-            // tanks need the flock parameters so we update them separately.
+            // Spawner ticks non-tank enemies internally
             _spawner.Update(gameTime, _player.Position, _player.Health.IsDead);
             _spawner.UpdateTanks(gameTime, _player.Position,
                 _player.Health.IsDead, _agentConfig, _agentForceSources);
@@ -166,6 +167,15 @@ namespace LILITH.Core.Scenes
             // ── Collision: melee enemies ──
             CheckMeleeHits(_spawner.Walkers);
             CheckMeleeHits(_spawner.Runners);
+
+            // ── Collision: agents → player (self-destruct on hit) ──
+            float playerRadius = _player.GetBounds().Radius;
+            foreach (var tank in _spawner.Tanks)
+            {
+                int damage = tank.ProcessAgentHits(_player.Position, playerRadius);
+                if (damage > 0)
+                    _player.Health.TakeDamage(damage);
+            }
 
             // ── Collision: shooter projectiles → player ──
             Circle playerBounds = _player.GetBounds();
@@ -208,7 +218,6 @@ namespace LILITH.Core.Scenes
             {
                 if (enemy.IsDead) continue;
 
-                // Use duck-typing via dynamic or pattern match
                 if (enemy is Enemies.Walker.Walker w && w.IsAttacking && w.CanAttack)
                 {
                     if (Vector2.Distance(w.Position, _player.Position) <= w.AttackRange
@@ -226,7 +235,6 @@ namespace LILITH.Core.Scenes
 
         private void BuildNavGraph()
         {
-            // Example graph — replace with your level's actual node layout
             var a = new NavNode { Id = 1, Position = new Vector2(100, 100) };
             var b = new NavNode { Id = 2, Position = new Vector2(400, 100) };
             var c = new NavNode { Id = 3, Position = new Vector2(700, 100) };

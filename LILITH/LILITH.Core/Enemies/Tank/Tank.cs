@@ -12,6 +12,16 @@ namespace LILITH.Core.Enemies.Tank
     {
         public int Damage { get; set; }
 
+        /// <summary>
+        /// Damage each agent deals to the player on contact.
+        /// </summary>
+        public int AgentDamage { get; set; } = 1;
+
+        /// <summary>
+        /// Collision radius for agent-vs-player hit detection.
+        /// </summary>
+        public float AgentHitRadius { get; set; } = 10f;
+
         public float AgentSpawnIntervalSeconds { get; set; } = 2f;
         public int MaxAgents { get; set; } = 15;
 
@@ -108,6 +118,28 @@ namespace LILITH.Core.Enemies.Tank
 
             foreach (var agent in _agents)
                 agent.Update(gameTime);
+        }
+
+        /// <summary>
+        /// Checks agents against the player position. Agents that hit
+        /// are removed and the method returns total damage dealt.
+        /// </summary>
+        public int ProcessAgentHits(Vector2 playerPosition, float playerRadius)
+        {
+            int totalDamage = 0;
+            float hitDistSq = (AgentHitRadius + playerRadius) * (AgentHitRadius + playerRadius);
+
+            for (int i = _agents.Count - 1; i >= 0; i--)
+            {
+                float distSq = Vector2.DistanceSquared(_agents[i].Position, playerPosition);
+                if (distSq <= hitDistSq)
+                {
+                    totalDamage += AgentDamage;
+                    _agents.RemoveAt(i);
+                }
+            }
+
+            return totalDamage;
         }
 
         public void UpdateAgentCenters()
