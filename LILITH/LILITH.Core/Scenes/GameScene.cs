@@ -425,6 +425,23 @@ public class GameScene : Scene
                     }
                 }
             }
+            if (_bossSpawned && !_boss.IsDead)
+            {
+                Circle bossBounds = _boss.GetBounds();
+                foreach (Circle hit in hitCircles)
+                {
+                    if (hit.Intersects(bossBounds))
+                    {
+                        _boss.Health.TakeDamage(ability.Damage);
+                        if (_boss.Health.IsDead)
+                        {
+                            _boss.ApplyDeath();
+                            _xpSpawner.SpawnOrb(_boss.Position, value: 10);
+                        }
+                        break;
+                    }
+                }
+            }
         }
     }
 
