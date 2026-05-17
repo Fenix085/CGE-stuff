@@ -6,10 +6,13 @@ using MainEngine.Camera;
 using MainEngine.Entities;
 using MainEngine.FlockEnemy;
 using MainEngine.Graphics;
+using MainEngine.Input;
 using MainEngine.Navigation;
 using LILITH.Core.Enemies;
+using LILITH.Core.Enemies.Boss;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 
 namespace LILITH.Core.Scenes
 {
@@ -25,6 +28,11 @@ namespace LILITH.Core.Scenes
         private AgentConfig _agentConfig;
         private readonly List<ForceSource> _agentForceSources = new();
 
+        // --- Boss ---
+        private Boss _boss;
+        private bool _bossSpawned;
+        private Texture2D _debugPixel;
+
         public override void Initialize()
         {
             HQ.ExitOnEscape = false;
@@ -34,6 +42,9 @@ namespace LILITH.Core.Scenes
 
         public override void LoadContent()
         {
+            _debugPixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
+            _debugPixel.SetData(new[] { Color.White });
+
             // ── Shared textures ──
             _agentRegion = MakeSolidRegion(8, 8, Color.White);
             var projectileRegion = MakeSolidRegion(6, 3, Color.Yellow);
@@ -157,18 +168,35 @@ namespace LILITH.Core.Scenes
 
         public override void Update(GameTime gameTime)
         {
+            // ── F5 = spawn / respawn boss ──
+            if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.F5))
+                SpawnBoss();
+
             _player.Update(gameTime);
 
-            // Spawner ticks non-tank enemies internally
             _spawner.Update(gameTime, _player.Position, _player.Health.IsDead);
             _spawner.UpdateTanks(gameTime, _player.Position,
                 _player.Health.IsDead, _agentConfig, _agentForceSources);
+
+            // ── Boss ──
+            if (_bossSpawned && !_boss.IsDead)
+            {
+                Circle playerBounds = _player.GetBounds();
+                _boss.Update(gameTime, _player.Position, playerBounds, _player.Health.IsDead);
+
+                if (_boss.PendingPlayerDamage > 0)
+                    _player.Health.TakeDamage(_boss.PendingPlayerDamage);
+
+                // Shockwaves scatter tank agents
+                if (_boss.ActiveForceSources.Count > 0)
+                    _agentForceSources.AddRange(_boss.ActiveForceSources);
+            }
 
             // ── Collision: melee enemies ──
             CheckMeleeHits(_spawner.Walkers);
             CheckMeleeHits(_spawner.Runners);
 
-            // ── Collision: agents → player (self-destruct on hit) ──
+            // ── Collision: agents → player ──
             float playerRadius = _player.GetBounds().Radius;
             foreach (var tank in _spawner.Tanks)
             {
@@ -178,12 +206,12 @@ namespace LILITH.Core.Scenes
             }
 
             // ── Collision: shooter projectiles → player ──
-            Circle playerBounds = _player.GetBounds();
+            Circle shooterPlayerBounds = _player.GetBounds();
             foreach (var shooter in _spawner.Shooters)
             {
                 foreach (var p in shooter.Projectiles)
                 {
-                    if (!p.IsDead && p.Bounds.Intersects(playerBounds))
+                    if (!p.IsDead && p.Bounds.Intersects(shooterPlayerBounds))
                     {
                         _player.Health.TakeDamage(shooter.Damage);
                         p.Hit = true;
@@ -205,11 +233,59 @@ namespace LILITH.Core.Scenes
             _player.Draw(gameTime, HQ.SpriteBatch);
             _spawner.Draw(gameTime, HQ.SpriteBatch);
 
+            // ── Boss ──
+            if (_bossSpawned)
+            {
+                // Warning zones (telegraphs + flashes)
+                foreach (Circle zone in _boss.WarningZones)
+                {
+                    DrawCircle(
+                        zone.Location.ToVector2(),
+                        zone.Radius,
+                        Color.Red * 0.3f);
+                }
+
+                if (!_boss.IsDead)
+                {
+                    _boss.Draw(gameTime, HQ.SpriteBatch);
+                    DrawHealthBar(
+                        _boss.Position + new Vector2(-30f, -_boss.Sprite.Height * 0.5f - 12f),
+                        60, 6,
+                        _boss.Health.CurrentHealth,
+                        _boss.Health.MaxHealth,
+                        Color.Red);
+                }
+            }
+
+            // ── HUD: F5 hint ──
+            if (!_bossSpawned)
+                DrawHintSquare();
+
+            HQ.SpriteBatch.End();
+
+            // ── Screen-space HUD ──
+            HQ.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            DrawPlayerHp();
             HQ.SpriteBatch.End();
         }
 
         // ────────────────────────────────────────
-        //  Helpers
+        //  Boss
+        // ────────────────────────────────────────
+
+        private void SpawnBoss()
+        {
+            var bossRegion = MakeSolidRegion(40, 40, Color.DarkRed);
+            var bossSprite = MakeAnimSprite(bossRegion);
+            bossSprite.Scale = new Vector2(2f);
+
+            Vector2 spawnPos = _player.Position + new Vector2(400f, 0f);
+            _boss = new Boss(bossSprite, spawnPos, hp: 20);
+            _bossSpawned = true;
+        }
+
+        // ────────────────────────────────────────
+        //  Collision helpers
         // ────────────────────────────────────────
 
         private void CheckMeleeHits<T>(IReadOnlyList<T> enemies) where T : Enemy
@@ -233,6 +309,10 @@ namespace LILITH.Core.Scenes
             }
         }
 
+        // ────────────────────────────────────────
+        //  Nav graph
+        // ────────────────────────────────────────
+
         private void BuildNavGraph()
         {
             var a = new NavNode { Id = 1, Position = new Vector2(100, 100) };
@@ -254,6 +334,123 @@ namespace LILITH.Core.Scenes
             _nav.AddHighway(Highway.Create(id++, 1, 5, a.Position, e.Position, 90f));
             _nav.AddHighway(Highway.Create(id++, 3, 6, c.Position, f.Position, 90f));
         }
+
+        // ────────────────────────────────────────
+        //  Drawing helpers
+        // ────────────────────────────────────────
+
+        private void DrawHealthBar(Vector2 pos, int width, int height, int current, int max, Color color)
+        {
+            float ratio = (float)current / max;
+
+            HQ.SpriteBatch.Draw(_debugPixel,
+                new Rectangle((int)pos.X, (int)pos.Y, width, height),
+                Color.Black * 0.7f);
+
+            HQ.SpriteBatch.Draw(_debugPixel,
+                new Rectangle((int)pos.X, (int)pos.Y, (int)(width * ratio), height),
+                color);
+        }
+
+        private void DrawCircle(Vector2 center, float radius, Color color, int segments = 48)
+        {
+            float step = MathF.PI * 2f / segments;
+            Vector2 prev = center + new Vector2(radius, 0);
+
+            for (int i = 1; i <= segments; i++)
+            {
+                float angle = step * i;
+                Vector2 next = center + new Vector2(
+                    MathF.Cos(angle) * radius,
+                    MathF.Sin(angle) * radius);
+                DrawLine(prev, next, color, 2f);
+                prev = next;
+            }
+        }
+
+        private void DrawLine(Vector2 start, Vector2 end, Color color, float thickness)
+        {
+            Vector2 delta = end - start;
+            float length = delta.Length();
+            if (length < 0.001f) return;
+
+            float angle = MathF.Atan2(delta.Y, delta.X);
+            HQ.SpriteBatch.Draw(_debugPixel, start, null, color, angle,
+                Vector2.Zero, new Vector2(length, thickness),
+                SpriteEffects.None, 0f);
+        }
+
+        private void DrawHintSquare()
+        {
+            float pulse = (MathF.Sin((float)Environment.TickCount64 / 300f) + 1f) * 0.5f;
+
+            Vector2 topLeft = _camera.Pos + new Vector2(
+                -HQ.GraphicsDevice.Viewport.Width * 0.5f + 10f,
+                -HQ.GraphicsDevice.Viewport.Height * 0.5f + 10f);
+
+            HQ.SpriteBatch.Draw(_debugPixel,
+                new Rectangle((int)topLeft.X, (int)topLeft.Y, 12, 12),
+                Color.Magenta * (0.4f + 0.6f * pulse));
+        }
+
+        // ────────────────────────────────────────
+        //  Player HP (screen-space pixel font)
+        // ────────────────────────────────────────
+
+        private void DrawPlayerHp()
+        {
+            string text = $"{_player.Health.CurrentHealth}/{_player.Health.MaxHealth}";
+            DrawPixelString(text, new Vector2(10, 10), 2, Color.LimeGreen);
+        }
+
+        // 3×5 bitmap glyphs for 0-9 and /
+        private static readonly Dictionary<char, byte[]> s_glyphs = new()
+        {
+            ['0'] = new byte[] { 0b111, 0b101, 0b101, 0b101, 0b111 },
+            ['1'] = new byte[] { 0b010, 0b110, 0b010, 0b010, 0b111 },
+            ['2'] = new byte[] { 0b111, 0b001, 0b111, 0b100, 0b111 },
+            ['3'] = new byte[] { 0b111, 0b001, 0b111, 0b001, 0b111 },
+            ['4'] = new byte[] { 0b101, 0b101, 0b111, 0b001, 0b001 },
+            ['5'] = new byte[] { 0b111, 0b100, 0b111, 0b001, 0b111 },
+            ['6'] = new byte[] { 0b111, 0b100, 0b111, 0b101, 0b111 },
+            ['7'] = new byte[] { 0b111, 0b001, 0b001, 0b001, 0b001 },
+            ['8'] = new byte[] { 0b111, 0b101, 0b111, 0b101, 0b111 },
+            ['9'] = new byte[] { 0b111, 0b101, 0b111, 0b001, 0b111 },
+            ['/'] = new byte[] { 0b001, 0b001, 0b010, 0b100, 0b100 },
+        };
+
+        private void DrawPixelString(string text, Vector2 pos, int scale, Color color)
+        {
+            float cursorX = pos.X;
+
+            foreach (char c in text)
+            {
+                if (s_glyphs.TryGetValue(c, out byte[] glyph))
+                {
+                    for (int row = 0; row < 5; row++)
+                    {
+                        for (int col = 0; col < 3; col++)
+                        {
+                            bool on = (glyph[row] & (1 << (2 - col))) != 0;
+                            if (on)
+                            {
+                                HQ.SpriteBatch.Draw(_debugPixel,
+                                    new Rectangle(
+                                        (int)cursorX + col * scale,
+                                        (int)pos.Y + row * scale,
+                                        scale, scale),
+                                    color);
+                            }
+                        }
+                    }
+                    cursorX += 4 * scale; // 3 wide + 1 gap
+                }
+            }
+        }
+
+        // ────────────────────────────────────────
+        //  Texture helpers
+        // ────────────────────────────────────────
 
         private TextureRegion MakeSolidRegion(int w, int h, Color color)
         {

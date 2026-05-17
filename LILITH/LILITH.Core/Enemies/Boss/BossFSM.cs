@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using MainEngine;
 using MainEngine.FlockEnemy;
 using MainEngine.FSM;
-using MainEngine.Graphics;
-using MainEngine.Projectile;
 using Microsoft.Xna.Framework;
 
 namespace LILITH.Core.Enemies.Boss
@@ -20,15 +18,17 @@ namespace LILITH.Core.Enemies.Boss
         public float MoveSpeed { get; set; }
         public bool IsAttacking { get; set; }
         public List<ForceSource> ActiveForceSources { get; } = new();
-        public List<Projectile> BossProjectiles { get; } = new();
 
-        // Asset the wall attack stamps onto spawned projectiles
-        public TextureRegion WallProjectileRegion { get; set; }
+        /// <summary>
+        /// Warning circles the scene should draw this frame (telegraphs).
+        /// Cleared each frame by ClearFrame().
+        /// </summary>
+        public List<Circle> WarningZones { get; } = new();
 
         // Used by EngageState to tell the FSM which attack was chosen
         internal int ChosenAttack { get; set; } = -1;
 
-        // Accumulated damage dealt this frame — scene reads then clears
+        // Accumulated damage dealt this frame
         public int PendingPlayerDamage { get; private set; }
 
         public BossContext(Boss boss)
@@ -42,13 +42,11 @@ namespace LILITH.Core.Enemies.Boss
         public void DamagePlayer(int amount)
             => PendingPlayerDamage += amount;
 
-        /// <summary>
-        /// Call once per frame after reading outputs.
-        /// </summary>
         public void ClearFrame()
         {
             PendingPlayerDamage = 0;
             ActiveForceSources.Clear();
+            WarningZones.Clear();
         }
     }
 
@@ -57,21 +55,9 @@ namespace LILITH.Core.Enemies.Boss
         private readonly BossContext _context;
         private readonly FiniteStateMachine<BossContext> _fsm = new();
 
-        // Expose the explosion state so the scene can read WarningZone for drawing
-        private readonly BigExplosionState _bigExplosion;
-
         public float MoveSpeed => _context.MoveSpeed;
         public bool IsAttacking => _context.IsAttacking;
         public BossContext Context => _context;
-
-        /// <summary>
-        /// If the boss is currently charging a big explosion, returns the
-        /// warning circle; otherwise null.
-        /// </summary>
-        public Circle? ActiveWarningZone =>
-            _fsm.ActiveState == _bigExplosion && !_bigExplosion.IsFinished
-                ? _bigExplosion.WarningZone(_context.Boss.Position)
-                : null;
 
         public BossFSM(Boss boss)
         {
@@ -79,8 +65,8 @@ namespace LILITH.Core.Enemies.Boss
 
             var idle = new IdleState();
             var engage = new EngageState();
-            _bigExplosion = new BigExplosionState();
-            var explosionWall = new ExplosionWallState();
+            var bigExplosion = new BigExplosionState();
+            var lineExplosion = new LineExplosionState();
             var dead = new DeadState();
 
             // --- Idle ---
@@ -94,10 +80,10 @@ namespace LILITH.Core.Enemies.Boss
 
             // --- Engage (picks next attack after a cooldown) ---
             engage.AddTransition(new FSMTransition<BossContext>(
-                _bigExplosion,
+                bigExplosion,
                 ctx => ctx.ChosenAttack == 0));
             engage.AddTransition(new FSMTransition<BossContext>(
-                explosionWall,
+                lineExplosion,
                 ctx => ctx.ChosenAttack == 1));
             engage.AddTransition(new FSMTransition<BossContext>(
                 idle,
@@ -108,18 +94,18 @@ namespace LILITH.Core.Enemies.Boss
                 ctx => ctx.Boss.Health.IsDead));
 
             // --- Big Explosion → back to Engage ---
-            _bigExplosion.AddTransition(new FSMTransition<BossContext>(
+            bigExplosion.AddTransition(new FSMTransition<BossContext>(
                 engage,
-                _ => _bigExplosion.IsFinished));
-            _bigExplosion.AddTransition(new FSMTransition<BossContext>(
+                _ => bigExplosion.IsFinished));
+            bigExplosion.AddTransition(new FSMTransition<BossContext>(
                 dead,
                 ctx => ctx.Boss.Health.IsDead));
 
-            // --- Explosion Wall → back to Engage ---
-            explosionWall.AddTransition(new FSMTransition<BossContext>(
+            // --- Line Explosion → back to Engage ---
+            lineExplosion.AddTransition(new FSMTransition<BossContext>(
                 engage,
-                _ => explosionWall.IsFinished));
-            explosionWall.AddTransition(new FSMTransition<BossContext>(
+                _ => lineExplosion.IsFinished));
+            lineExplosion.AddTransition(new FSMTransition<BossContext>(
                 dead,
                 ctx => ctx.Boss.Health.IsDead));
 
@@ -153,7 +139,7 @@ namespace LILITH.Core.Enemies.Boss
     internal sealed class EngageState : FSMState<BossContext>
     {
         private const float AttackCooldown = 1.2f;
-        private const int AttackCount = 2; // 0 = big explosion, 1 = wall
+        private const int AttackCount = 2; // 0 = big explosion, 1 = line
         private float _cooldownTimer;
 
         public override void OnEnter(BossContext ctx)
@@ -167,7 +153,6 @@ namespace LILITH.Core.Enemies.Boss
         {
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            // Slowly approach the player while deciding
             ctx.MoveSpeed = 60f;
             ctx.Boss.MoveToward(ctx.PlayerPosition, dt, ctx.MoveSpeed);
 
@@ -182,52 +167,77 @@ namespace LILITH.Core.Enemies.Boss
         }
     }
 
+    // ----------------------------------------------------------------
+    //  Big Explosion — targeted at the player's current position
+    //
+    //  1. Locks onto where the player is standing when the attack begins
+    //  2. Shows a growing warning circle at THAT spot for 1 second
+    //  3. Detonates — damages if the player didn't leave the area
+    // ----------------------------------------------------------------
+
     internal sealed class BigExplosionState : FSMState<BossContext>
     {
-        private const float ChargeTime = 1.5f;
-        private const float ExplosionRadius = 200f;
-        private const float DamageRadius = 180f;
-        private const float TotalDuration = 1.8f;
+        private const float TelegraphTime = 1.0f;
+        private const float ExplosionRadius = 120f;
+        private const float DamageRadius = 110f;
+        private const float TotalDuration = 1.3f;
+        private const int Damage = 3;
 
         private float _elapsed;
         private bool _hasDamaged;
+        private Vector2 _targetPos;
 
         public bool IsFinished => _elapsed >= TotalDuration;
-
-        /// <summary>
-        /// Growing warning circle the scene can draw during the charge phase.
-        /// </summary>
-        public Circle WarningZone(Vector2 bossPos) => new Circle(
-            (int)bossPos.X, (int)bossPos.Y,
-            (int)(ExplosionRadius * MathHelper.Clamp(_elapsed / ChargeTime, 0f, 1f)));
 
         public override void OnEnter(BossContext ctx)
         {
             _elapsed = 0f;
             _hasDamaged = false;
             ctx.IsAttacking = true;
-            ctx.MoveSpeed = 0f; // stand still while charging
+            ctx.MoveSpeed = 0f;
+
+            // Lock onto where the player is right now
+            _targetPos = ctx.PlayerPosition;
         }
 
         public override void OnUpdate(BossContext ctx, GameTime gameTime)
         {
             _elapsed += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            if (!_hasDamaged && _elapsed >= ChargeTime)
+            // Growing warning circle at the target position
+            if (_elapsed < TelegraphTime)
+            {
+                float progress = _elapsed / TelegraphTime;
+                ctx.WarningZones.Add(new Circle(
+                    (int)_targetPos.X,
+                    (int)_targetPos.Y,
+                    (int)(ExplosionRadius * progress)));
+            }
+
+            // Detonation
+            if (!_hasDamaged && _elapsed >= TelegraphTime)
             {
                 _hasDamaged = true;
 
                 Circle blast = new Circle(
-                    (int)ctx.Boss.Position.X,
-                    (int)ctx.Boss.Position.Y,
+                    (int)_targetPos.X,
+                    (int)_targetPos.Y,
                     (int)DamageRadius);
 
                 if (blast.Intersects(ctx.PlayerBounds))
-                    ctx.DamagePlayer(3);
+                    ctx.DamagePlayer(Damage);
 
-                // Shockwave pushes nearby agents outward
                 ctx.ActiveForceSources.Add(
-                    new ForceSource(ctx.Boss.Position, ExplosionRadius, -50f));
+                    new ForceSource(_targetPos, ExplosionRadius, -50f));
+            }
+
+            // Brief flash after detonation
+            if (_hasDamaged && _elapsed < TotalDuration)
+            {
+                ctx.WarningZones.Add(new Circle(
+                    (int)_targetPos.X,
+                    (int)_targetPos.Y,
+                    (int)ExplosionRadius));
             }
         }
 
@@ -237,50 +247,102 @@ namespace LILITH.Core.Enemies.Boss
         }
     }
 
-    internal sealed class ExplosionWallState : FSMState<BossContext>
+    // ----------------------------------------------------------------
+    //  Line Explosion — 6 small blasts cascading from boss → player
+    //
+    //  On enter: calculates 6 positions evenly spaced along the
+    //  straight line from the boss to the player's current position.
+    //  Each explosion telegraphs briefly, then detonates in sequence,
+    //  creating a ripple effect the player must sidestep.
+    // ----------------------------------------------------------------
+
+    internal sealed class LineExplosionState : FSMState<BossContext>
     {
-        private const int WallSegments = 8;
-        private const float Duration = 0.3f;
+        private const int Count = 6;
+        private const float StaggerDelay = 0.15f;  // gap between each explosion starting
+        private const float TelegraphTime = 0.3f;   // warning visible before each detonation
+        private const float SmallRadius = 45f;
+        private const float SmallDamageRadius = 40f;
+        private const int Damage = 1;
 
         private float _elapsed;
+        private readonly Vector2[] _positions = new Vector2[Count];
+        private readonly bool[] _hasDamaged = new bool[Count];
 
-        public bool IsFinished => _elapsed >= Duration;
+        private const float TotalDuration =
+            (Count - 1) * StaggerDelay + TelegraphTime + 0.2f;
+
+        public bool IsFinished => _elapsed >= TotalDuration;
 
         public override void OnEnter(BossContext ctx)
         {
             _elapsed = 0f;
+            Array.Clear(_hasDamaged);
+
             ctx.IsAttacking = true;
             ctx.MoveSpeed = 0f;
 
-            int gap = Random.Shared.Next(0, WallSegments);
-            float spacing = 720f / WallSegments;
+            Vector2 start = ctx.Boss.Position;
+            Vector2 end = ctx.PlayerPosition;
 
-            Vector2 toPlayer = ctx.PlayerPosition - ctx.Boss.Position;
-            Vector2 dir = toPlayer.LengthSquared() > 0.001f
-                ? Vector2.Normalize(toPlayer)
-                : Vector2.UnitX;
-
-            for (int i = 0; i < WallSegments; i++)
+            for (int i = 0; i < Count; i++)
             {
-                if (i == gap) continue;
-
-                Projectile proj = new Projectile
-                {
-                    Position = ctx.Boss.Position + new Vector2(0, i * spacing - 360f),
-                    Direction = dir,
-                    Speed = 300f
-                };
-
-                if (ctx.WallProjectileRegion != null)
-                    proj.Region = ctx.WallProjectileRegion;
-
-                ctx.BossProjectiles.Add(proj);
+                float t = Count > 1 ? (float)i / (Count - 1) : 0f;
+                _positions[i] = Vector2.Lerp(start, end, t);
             }
         }
 
         public override void OnUpdate(BossContext ctx, GameTime gameTime)
         {
             _elapsed += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            for (int i = 0; i < Count; i++)
+            {
+                float activateAt = i * StaggerDelay;
+                float detonateAt = activateAt + TelegraphTime;
+
+                // Not started yet
+                if (_elapsed < activateAt)
+                    continue;
+
+                // Telegraph phase — growing warning circle
+                if (_elapsed < detonateAt)
+                {
+                    float progress = (_elapsed - activateAt) / TelegraphTime;
+                    ctx.WarningZones.Add(new Circle(
+                        (int)_positions[i].X,
+                        (int)_positions[i].Y,
+                        (int)(SmallRadius * progress)));
+                    continue;
+                }
+
+                // Detonation
+                if (!_hasDamaged[i])
+                {
+                    _hasDamaged[i] = true;
+
+                    Circle blast = new Circle(
+                        (int)_positions[i].X,
+                        (int)_positions[i].Y,
+                        (int)SmallDamageRadius);
+
+                    if (blast.Intersects(ctx.PlayerBounds))
+                        ctx.DamagePlayer(Damage);
+
+                    ctx.ActiveForceSources.Add(
+                        new ForceSource(_positions[i], SmallRadius, -15f));
+                }
+
+                // Brief flash after detonation
+                float flashEnd = detonateAt + 0.15f;
+                if (_elapsed < flashEnd)
+                {
+                    ctx.WarningZones.Add(new Circle(
+                        (int)_positions[i].X,
+                        (int)_positions[i].Y,
+                        (int)SmallRadius));
+                }
+            }
         }
 
         public override void OnExit(BossContext ctx)
