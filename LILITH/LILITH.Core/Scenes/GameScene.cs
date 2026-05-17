@@ -73,6 +73,7 @@ public class GameScene : Scene
         // ── Player ──
         var player = new Player(new Vector2(400, 300), hp: 100, pixel: _pixel);
         _controller = new PlayerController(player, _pixel);
+        _controller.AddAbility(new AutoShootAbility());
 
         // ── Camera ──
         _camera     = new Camera();
@@ -214,8 +215,9 @@ public class GameScene : Scene
         if (_isPaused) return;
 
         // ── Player ──
-        Vector2 cursorWorld = GetCursorWorld();
-        _controller.Update(gameTime, _controller.Player.LastMoveDirection, cursorWorld);
+        Vector2 nearestEnemyDir = GetNearestEnemyDirection();
+        Vector2 cursorWorld     = GetCursorWorld();
+        _controller.Update(gameTime, nearestEnemyDir, cursorWorld);
         
         CheckAbilityHits();
 
@@ -347,7 +349,8 @@ public class GameScene : Scene
         new SatelliteAbility(),
         new AuraAbility(),
         new TrailAbility(),
-        new SlashAbility()
+        new SlashAbility(),
+        new AutoShootAbility()
     };
 
     private IAbility[] GetRandomCards()
@@ -505,6 +508,35 @@ public class GameScene : Scene
         _nav.AddHighway(Highway.Create(id++, 4, 6, d.Position, f.Position, 90f));
         _nav.AddHighway(Highway.Create(id++, 1, 5, a.Position, e.Position, 90f));
         _nav.AddHighway(Highway.Create(id++, 3, 6, c.Position, f.Position, 90f));
+    }
+    private Vector2 GetNearestEnemyDirection()
+    {
+        var player = _controller.Player;
+        float   bestDist = float.MaxValue;
+        Vector2 bestDir  = Vector2.Zero;
+
+        // Проверяем всех врагов
+        var allEnemies = new List<Enemy>();
+        allEnemies.AddRange(_enemySpawner.Walkers);
+        allEnemies.AddRange(_enemySpawner.Runners);
+        allEnemies.AddRange(_enemySpawner.Shooters);
+        allEnemies.AddRange(_enemySpawner.Tanks);
+
+        if (_bossSpawned && !_boss.IsDead)
+            allEnemies.Add(_boss);
+
+        foreach (var enemy in allEnemies)
+        {
+            if (enemy.IsDead) continue;
+            float dist = Vector2.Distance(player.Position, enemy.Position);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                bestDir  = Vector2.Normalize(enemy.Position - player.Position);
+            }
+        }
+
+        return bestDir;
     }
 
     // ── Helper Methods for Drawing ─────────────────────────────────

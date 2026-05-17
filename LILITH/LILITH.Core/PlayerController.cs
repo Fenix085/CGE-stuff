@@ -21,11 +21,11 @@ public class PlayerController
         _pixel = pixel;
     }
 
-    // ── Способности ───────────────────────────────────────────────────────
+    // ── Abilities ───────────────────────────────────────────────────────
 
     public void AddAbility(IAbility ability) => _abilities.Add(ability);
     public IReadOnlyList<IAbility> GetAllAbilities() => _abilities;
-    // Найти существующую способность того же типа — для Upgrade
+    // Find existing ability of the same type — for Upgrade
     public T? GetAbility<T>() where T : class, IAbility
     {
         foreach (var a in _abilities)
@@ -36,17 +36,20 @@ public class PlayerController
     // ── Update / Draw ─────────────────────────────────────────────────────
 
     public void Update(GameTime gameTime, Vector2 moveDirection, Vector2 cursorWorld)
-{
-    Player.Update(gameTime);
-
-    foreach (var ability in _abilities)
     {
-        if (ability is SatelliteAbility || ability is AuraAbility)
-            ability.Update(gameTime, Player.Center, cursorWorld);
-        else
-            ability.Update(gameTime, Player.Center, moveDirection);
+        Player.Update(gameTime);
+
+        foreach (var ability in _abilities)
+        {
+            Vector2 dir = ability is AutoShootAbility
+                ? moveDirection  // AutoShoot uses movement direction as aim
+                : ability is SlashAbility || ability is TrailAbility
+                    ? Player.LastMoveDirection
+                    : cursorWorld;
+
+            ability.Update(gameTime, Player.Center, dir);
+        }
     }
-}
 
     public void Draw(GameTime gameTime, SpriteBatch sb)
     {
