@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MainEngine;
 
 namespace LILITH.Abilities;
 
@@ -7,8 +9,12 @@ public interface IAbility
 {
     string Name        { get; }
     string Description { get; }
+    int Damage { get; }
 
-    void Update(GameTime gameTime, Vector2 playerCenter, Vector2 cursorWorld);
+    void Update(GameTime gameTime, Vector2 playerCenter, Vector2 aimDirection);
     void Draw(GameTime gameTime, SpriteBatch spriteBatch, Texture2D pixel);
     void Upgrade();
+
+    
+    IReadOnlyList<Circle> GetHitCircles();
 }

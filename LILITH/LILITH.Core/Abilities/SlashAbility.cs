@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using MainEngine;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -8,6 +10,7 @@ public class SlashAbility : IAbility
 {
     public string Name        => "Slash";
     public string Description => "Auto sword slash\n in the direction of movement.";
+    public int Damage { get; private set; } = 25;
 
     // ── Параметры ─────────────────────────────────────────────────────────
 
@@ -152,4 +155,26 @@ public class SlashAbility : IAbility
                 Vector2.Zero, new Vector2(length, thickness),
                 SpriteEffects.None, 0f);
     }
+
+    public IReadOnlyList<Circle> GetHitCircles()
+{
+    if (!_isSwinging) return Array.Empty<Circle>();
+
+    var circles = new List<Circle>();
+    float halfArc   = _arcAngle * 0.5f;
+    float baseAngle = MathF.Atan2(_swingDirection.Y, _swingDirection.X);
+    float t         = _swingTimer / _swingDuration;
+    float sweepEnd  = MathHelper.Lerp(-halfArc, halfArc, t);
+
+    const int STEPS = 8;
+    for (int i = 0; i <= STEPS; i++)
+    {
+        float   a   = baseAngle - halfArc + (sweepEnd - (-halfArc)) * i / STEPS;
+        Vector2 pos = _lastPlayerCenter +
+                      new Vector2(MathF.Cos(a), MathF.Sin(a)) * _arcRadius * 0.7f;
+        circles.Add(new Circle((int)pos.X, (int)pos.Y, 12));
+    }
+
+    return circles;
+}
 }

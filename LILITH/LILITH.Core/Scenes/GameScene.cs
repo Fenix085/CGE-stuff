@@ -207,7 +207,7 @@ public class GameScene : Scene
         _xpBar.Update(gameTime);
         _levelUp.Update(gameTime, HQ.GraphicsDevice.Viewport);
 
-        // Босс on F5
+        // Boss on F5
         if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.F5))
             SpawnBoss();
 
@@ -216,6 +216,8 @@ public class GameScene : Scene
         // ── Player ──
         Vector2 cursorWorld = GetCursorWorld();
         _controller.Update(gameTime, _controller.Player.LastMoveDirection, cursorWorld);
+        
+        CheckAbilityHits();
 
         // ── Camera ──
         _camera.Pos = Vector2.Lerp(_camera.Pos, _controller.Player.Center, CAMERA_LERP);
@@ -275,6 +277,7 @@ public class GameScene : Scene
                 }
             }
         }
+
     }
 
     // ── Draw ──────────────────────────────────────────────────────────────
@@ -389,6 +392,40 @@ public class GameScene : Scene
 
         _controller.AddAbility(chosen);
         _isPaused = false;
+    }
+
+    private void CheckAbilityHits()
+    {
+        var allEnemies = new List<Enemy>();
+        allEnemies.AddRange(_enemySpawner.Walkers);
+        allEnemies.AddRange(_enemySpawner.Runners);
+        allEnemies.AddRange(_enemySpawner.Shooters);
+        allEnemies.AddRange(_enemySpawner.Tanks);
+
+        foreach (var ability in _controller.GetAllAbilities())
+        {
+            IReadOnlyList<Circle> hitCircles = ability.GetHitCircles();
+            if (hitCircles.Count == 0) continue;
+
+            foreach (var enemy in allEnemies)
+            {
+                if (enemy.IsDead) continue;
+
+                Circle enemyBounds = enemy.GetBounds();
+
+                foreach (Circle hit in hitCircles)
+                {
+                    if (hit.Intersects(enemyBounds))
+                    {
+                        enemy.Health.TakeDamage(ability.Damage);
+                        if (enemy.Health.IsDead)
+                            enemy.ApplyDeath();
+                            _xpSpawner.SpawnOrb(enemy.Position);
+                        break; 
+                    }
+                }
+            }
+        }
     }
 
     // ── Boss ──────────────────────────────────────────────────────────────

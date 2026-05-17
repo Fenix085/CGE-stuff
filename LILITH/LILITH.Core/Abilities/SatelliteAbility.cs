@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MainEngine;
 
 namespace LILITH.Abilities;
 
@@ -24,6 +25,7 @@ public class SatelliteAbility : IAbility
     private const int SAT_RADIUS = 7;
     public string Name        => "Satellite";
     public string Description => "Orbital satellite,\nshooting at the cursor.";
+    public int Damage => _projectileDamage;
 
     public SatelliteAbility()
     {
@@ -93,6 +95,17 @@ public class SatelliteAbility : IAbility
                 _projectileDamage));
         }
     }
+
+    public IReadOnlyList<Circle> GetHitCircles()
+{
+    var circles = new List<Circle>();
+    foreach (var p in _projectiles)
+    {
+        if (!p.IsExpired)
+            circles.Add(new Circle((int)p.Position.X, (int)p.Position.Y, 5));
+    }
+    return circles;
+}
 
     private Vector2 GetSatellitePosition(Vector2 center, int index)
     {

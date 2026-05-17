@@ -94,4 +94,8 @@ public class ExperienceSpawner
                     cameraPos.Y + (float)(_rng.NextDouble() * 2 - 1) * halfH),
         };
     }
+    public void SpawnOrb(Vector2 position, int value = 10)
+    {
+        _orbs.Add(new ExperienceOrb(position, value));
+    }
 }

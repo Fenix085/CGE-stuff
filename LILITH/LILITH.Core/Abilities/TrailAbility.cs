@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MainEngine;
 
 namespace LILITH.Abilities;
 
@@ -9,6 +10,7 @@ public class TrailAbility : IAbility
 {
     public string Name        => "Trail";
     public string Description => "Left a trail while\nmoving. Damages enemies on contact.";
+    public int Damage { get; private set; } = 5;
 
     // ── Параметры ─────────────────────────────────────────────────────────
 
@@ -129,5 +131,16 @@ public class TrailAbility : IAbility
                 new Rectangle((int)center.X - dx, (int)center.Y + dy, dx * 2, 1),
                 color);
         }
+    }
+
+    public IReadOnlyList<Circle> GetHitCircles()
+    {
+        var circles = new List<Circle>();
+        foreach (var drop in _drops)
+        {
+            if (!drop.IsExpired)
+                circles.Add(new Circle((int)drop.Position.X, (int)drop.Position.Y, (int)drop.Radius));
+        }
+        return circles;
     }
 }

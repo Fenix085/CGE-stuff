@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using MainEngine;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -8,6 +10,7 @@ public class AuraAbility : IAbility
 {
     public string Name        => "Aura";
     public string Description => "Produce an aura around\nthe player. Damages enemies\n on contact.";
+    public int Damage { get; private set; } = 10;
 
     private float _radius;
     private float _pulseTimer;
@@ -18,6 +21,10 @@ public class AuraAbility : IAbility
     private const float UPGRADE_RADIUS_GAIN = 20f;
     private const float PULSE_AMPLITUDE    = 4f;   
     private const int   OUTLINE_THICKNESS  = 2;
+
+    private float _damageTimer = 0f;
+    private const float DAMAGE_INTERVAL = 1.0f;
+    private bool _canDamage = false;
 
     public AuraAbility()
     {
@@ -34,6 +41,16 @@ public class AuraAbility : IAbility
         float dt        = (float)gameTime.ElapsedGameTime.TotalSeconds;
         _pulseTimer    += dt * PULSE_SPEED;
         _lastPlayerCenter = playerCenter;
+        _damageTimer += dt;
+        if (_damageTimer >= DAMAGE_INTERVAL)
+        {
+            _damageTimer = 0f;
+            _canDamage   = true;
+        }
+        else
+        {
+            _canDamage = false;
+        }
     }
 
     public void Draw(GameTime gameTime, SpriteBatch sb, Texture2D pixel)
@@ -91,5 +108,15 @@ public class AuraAbility : IAbility
                     color);
             }
         }
+    }
+
+    public IReadOnlyList<Circle> GetHitCircles()
+    {
+        if (!_canDamage) return Array.Empty<Circle>();
+
+        float pulse = MathF.Sin(_pulseTimer);
+        int   r     = (int)(_radius + pulse * PULSE_AMPLITUDE);
+
+        return new[] { new Circle((int)_lastPlayerCenter.X, (int)_lastPlayerCenter.Y, r) };
     }
 }
