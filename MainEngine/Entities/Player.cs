@@ -9,7 +9,7 @@ namespace MainEngine.Entities;
 
 public class Player : Sprite
 {
-    public AnimatedSprite? Sprite { get; private set; }
+    public AnimatedSprite? Sprite { get; set; }
     public Health Health;
     public const float MOVEMENT_SPEED = 5f;
 

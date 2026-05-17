@@ -78,8 +78,11 @@ public class GameScene : Scene
         // ── Player ──
         var atlas  = TextureAtlas.FromFile(Content, "player.xml");
         var idle   = atlas.CreateAnimatedSprite("idle");
+        var walk   = atlas.CreateAnimatedSprite("walk");
+        var death  = atlas.CreateAnimatedSprite("death");
+
         var player = new Player(idle, new Vector2(400, 300), hp: 100);
-        _controller = new PlayerController(player, _pixel);
+        _controller = new PlayerController(player, _pixel, idle, walk, death);
         _controller.AddAbility(new AutoShootAbility());
 
         // ── Camera ──

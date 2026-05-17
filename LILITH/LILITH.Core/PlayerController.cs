@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using LILITH.Abilities;
 using MainEngine;
 using MainEngine.Entities;
+using MainEngine.Graphics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 
 namespace LILITH.Core;
 
@@ -15,17 +15,41 @@ public class PlayerController
     private readonly List<IAbility> _abilities = new();
     private readonly Texture2D      _pixel;
 
+    // ── Анимации ──────────────────────────────────────────────────────────
+
+    private readonly AnimatedSprite? _idleAnim;
+    private readonly AnimatedSprite? _walkAnim;
+    private readonly AnimatedSprite? _deathAnim;
+
+    private Vector2 _prevPosition;
+
+    // ── Конструкторы ──────────────────────────────────────────────────────
+
+    /// <summary>Без спрайтов — используется заглушка.</summary>
     public PlayerController(Player player, Texture2D pixel)
     {
-        Player = player;
-        _pixel = pixel;
+        Player        = player;
+        _pixel        = pixel;
+        _prevPosition = player.Position;
     }
 
-    // ── Abilities ───────────────────────────────────────────────────────
+    /// <summary>С анимациями — переключение происходит автоматически.</summary>
+    public PlayerController(Player player, Texture2D pixel,
+                            AnimatedSprite idle, AnimatedSprite walk, AnimatedSprite death)
+    {
+        Player        = player;
+        _pixel        = pixel;
+        _idleAnim     = idle;
+        _walkAnim     = walk;
+        _deathAnim    = death;
+        _prevPosition = player.Position;
+    }
+
+    // ── Abilities ─────────────────────────────────────────────────────────
 
     public void AddAbility(IAbility ability) => _abilities.Add(ability);
     public IReadOnlyList<IAbility> GetAllAbilities() => _abilities;
-    // Find existing ability of the same type — for Upgrade
+
     public T? GetAbility<T>() where T : class, IAbility
     {
         foreach (var a in _abilities)
@@ -33,23 +57,49 @@ public class PlayerController
         return null;
     }
 
-    // ── Update / Draw ─────────────────────────────────────────────────────
+    // ── Update ────────────────────────────────────────────────────────────
 
     public void Update(GameTime gameTime, Vector2 moveDirection, Vector2 cursorWorld)
     {
         Player.Update(gameTime);
+        UpdateAnimation(gameTime);
 
         foreach (var ability in _abilities)
         {
             Vector2 dir = ability is AutoShootAbility
-                ? moveDirection  // AutoShoot uses movement direction as aim
+                ? moveDirection
                 : ability is SlashAbility || ability is TrailAbility
                     ? Player.LastMoveDirection
                     : cursorWorld;
 
             ability.Update(gameTime, Player.Center, dir);
         }
+
+        _prevPosition = Player.Position;
     }
+
+    private void UpdateAnimation(GameTime gameTime)
+    {
+        if (_idleAnim == null) return;
+
+        bool isMoving = Vector2.DistanceSquared(Player.Position, _prevPosition) > 0.01f;
+
+        AnimatedSprite target;
+
+        if (Player.Health.IsDead && _deathAnim != null)
+            target = _deathAnim;
+        else if (isMoving && _walkAnim != null)
+            target = _walkAnim;
+        else
+            target = _idleAnim;
+
+        if (Player.Sprite != target)
+            Player.Sprite = target;
+
+        Player.Sprite.Update(gameTime);
+    }
+
+    // ── Draw ──────────────────────────────────────────────────────────────
 
     public void Draw(GameTime gameTime, SpriteBatch sb)
     {
