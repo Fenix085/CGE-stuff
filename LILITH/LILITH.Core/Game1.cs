@@ -10,7 +10,7 @@ public class Game1 : HQ
     {
         base.Initialize();
 
-        ChangeScene(new Scenes.EnemyTestScene());
+        ChangeScene(new Scenes.GameScene());
     }
     
 }

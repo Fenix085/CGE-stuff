@@ -1,11 +1,17 @@
 using System;
+using System.Collections.Generic;
 using LILITH.Abilities;
 using LILITH.Core;
+using LILITH.Core.Enemies;
+using LILITH.Core.Enemies.Boss;
 using LILITH.Items;
 using LILITH.UI;
 using MainEngine;
 using MainEngine.Camera;
 using MainEngine.Entities;
+using MainEngine.FlockEnemy;
+using MainEngine.Graphics;
+using MainEngine.Navigation;
 using MainEngine.Scenes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -15,70 +21,259 @@ namespace LILITH.Core.Scenes;
 
 public class GameScene : Scene
 {
-    private PlayerController  _controller = null!;
-    private Camera            _camera     = null!;
-    private ExperienceSpawner _spawner    = null!;
-    private ExperienceBar     _xpBar      = null!;
-    private LevelUpScreen     _levelUp    = null!;
+    // ── Core ──────────────────────────────────────────────────────────────
 
-    private Texture2D  _pixel = null!;
-    private SpriteFont _font  = null!;
-    private bool       _isPaused;
+    private PlayerController _controller = null!;
+    private Camera           _camera     = null!;
+    private Texture2D        _pixel      = null!;
+    private SpriteFont       _font       = null!;
 
-    private const int   CARD_COUNT  = 4;
     private const float CAMERA_LERP = 0.1f;
 
+    // ── Exp and UI ─────────────────────────────────────────────────────────
+
+    private ExperienceSpawner _xpSpawner = null!;
+    private ExperienceBar     _xpBar     = null!;
+    private LevelUpScreen     _levelUp   = null!;
+    private bool              _isPaused;
+
+    private const int  CARD_COUNT    = 3;
     private IAbility[] _currentCards = Array.Empty<IAbility>();
     private readonly Random _random  = new();
 
-    // ── Инициализация ─────────────────────────────────────────────────────
+    // ── Enemies ─────────────────────────────────────────────────────────────
 
-    public override void Initialize() => base.Initialize();
+    private EnemySpawner              _enemySpawner   = null!;
+    private Navigation                _nav            = null!;
+    private AgentConfig               _agentConfig    = null!;
+    private TextureRegion             _agentRegion    = null!;
+    private readonly List<ForceSource> _forceSources  = new();
+
+    // ── Boss ──────────────────────────────────────────────────────────────
+
+    private Boss _boss        = null!;
+    private bool _bossSpawned = false;
+
+    // ── Initialization ─────────────────────────────────────────────────────
+
+    public override void Initialize()
+    {
+        HQ.ExitOnEscape = false;
+        base.Initialize();
+    }
 
     public override void LoadContent()
     {
+        
         _pixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
+
         _font = Content.Load<SpriteFont>("DefaultFont");
 
-        var player = new Player(new Vector2(640, 360), hp: 100, pixel: _pixel);
-
+        // ── Player ──
+        var player = new Player(new Vector2(400, 300), hp: 100, pixel: _pixel);
         _controller = new PlayerController(player, _pixel);
 
+        // ── Camera ──
         _camera     = new Camera();
         _camera.Pos = player.Center;
 
-        _spawner = new ExperienceSpawner();
-        _xpBar   = new ExperienceBar();
-        _levelUp = new LevelUpScreen();
+        // ── Experience and UI ──
+        _xpSpawner = new ExperienceSpawner();
+        _xpBar     = new ExperienceBar();
+        _levelUp   = new LevelUpScreen();
 
         player.OnLevelUp      += HandleLevelUp;
         _levelUp.OnCardChosen += HandleCardChosen;
 
-        _spawner.SpawnInitial(player.Center, HQ.GraphicsDevice.Viewport);
+        _xpSpawner.SpawnInitial(player.Center, HQ.GraphicsDevice.Viewport);
+
+        // ── Enemies ──
+        _agentRegion = MakeSolidRegion(8, 8, Color.White);
+        var projectileRegion = MakeSolidRegion(6, 3, Color.Yellow);
+
+        _agentConfig = new AgentConfig
+        {
+            AgentSpeed       = 65f,
+            RepulsionRadius  = 50f,
+            AlignmentRadius  = 100f,
+            AttractionRadius = 200f,
+            AttractionAngle  = MathHelper.ToRadians(70f),
+            RepulsionForce   = 10f,
+            AlignmentForce   = 5f,
+            AttractionForce  = 2f,
+            GravitationForce = 0.5f,
+            DebugVisible     = false
+        };
+
+        _nav = new Navigation();
+        BuildNavGraph();
+
+        _enemySpawner = new EnemySpawner();
+        _enemySpawner.SetNavigation(_nav);
+
+        _enemySpawner.AddSpawnPoint(new Vector2(100, 100));
+        _enemySpawner.AddSpawnPoint(new Vector2(700, 100));
+        _enemySpawner.AddSpawnPoint(new Vector2(700, 500));
+        _enemySpawner.AddSpawnPoint(new Vector2(100, 500));
+
+        _enemySpawner.RegisterFactory(EnemyType.Walker, pos =>
+        {
+            var s = MakeAnimSprite(MakeSolidRegion(16, 16, Color.Green));
+            return new Enemies.Walker.Walker(s, pos);
+        });
+
+        _enemySpawner.RegisterFactory(EnemyType.Runner, pos =>
+        {
+            var s = MakeAnimSprite(MakeSolidRegion(12, 12, Color.Cyan));
+            return new Enemies.Runner.Runner(s, pos);
+        });
+
+        _enemySpawner.RegisterFactory(EnemyType.Shooter, pos =>
+        {
+            var s       = MakeAnimSprite(MakeSolidRegion(16, 16, Color.Orange));
+            var shooter = new Enemies.Shooter.Shooter(s, pos)
+            {
+                ProjectileFactory = (pPos, dir) => new MainEngine.Projectile.Projectile
+                {
+                    Position  = pPos,
+                    Direction = dir,
+                    Region    = projectileRegion,
+                    Speed     = 200f,
+                    LifeTime  = 3f
+                }
+            };
+            return shooter;
+        });
+
+        _enemySpawner.RegisterFactory(EnemyType.Tank, pos =>
+        {
+            var s = MakeAnimSprite(MakeSolidRegion(32, 32, Color.Red));
+            return new Enemies.Tank.Tank(s, pos)
+            {
+                AgentSpawnIntervalSeconds = 2f,
+                MaxAgents                = 15,
+                AgentDamage              = 1,
+                AgentHitRadius           = 10f,
+                AgentFactory             = aPos =>
+                {
+                    var agent = new Agent(_agentRegion, aPos);
+                    agent.Scale = new Vector2(1f);
+                    return agent;
+                }
+            };
+        });
+
+        _enemySpawner.AddWave(new Wave
+        {
+            Entries = new List<SpawnEntry>
+            {
+                new() { Type = EnemyType.Walker, Count = 3, DelayBetween = 0.8f },
+                new() { Type = EnemyType.Runner, Count = 2, DelayBetween = 0.4f },
+            },
+            DelayAfterWave = 6f
+        });
+
+        _enemySpawner.AddWave(new Wave
+        {
+            Entries = new List<SpawnEntry>
+            {
+                new() { Type = EnemyType.Shooter, Count = 2, DelayBetween = 1f   },
+                new() { Type = EnemyType.Walker,  Count = 4, DelayBetween = 0.6f },
+                new() { Type = EnemyType.Runner,  Count = 3, DelayBetween = 0.3f },
+            },
+            DelayAfterWave = 8f
+        });
+
+        _enemySpawner.AddWave(new Wave
+        {
+            Entries = new List<SpawnEntry>
+            {
+                new() { Type = EnemyType.Tank,    Count = 1, DelayBetween = 0f   },
+                new() { Type = EnemyType.Shooter, Count = 2, DelayBetween = 1f   },
+                new() { Type = EnemyType.Runner,  Count = 5, DelayBetween = 0.3f },
+            },
+            DelayAfterWave = 10f
+        });
+
+        _enemySpawner.Start();
     }
 
     // ── Update ────────────────────────────────────────────────────────────
 
     public override void Update(GameTime gameTime)
     {
+        // UI updates first, so that they appear above the gameplay layer
         _xpBar.Update(gameTime);
         _levelUp.Update(gameTime, HQ.GraphicsDevice.Viewport);
 
+        // Босс on F5
+        if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.F5))
+            SpawnBoss();
+
         if (_isPaused) return;
 
+        // ── Player ──
         Vector2 cursorWorld = GetCursorWorld();
-        _controller.Update(gameTime, _controller.Player.LastMoveDirection, GetCursorWorld());
+        _controller.Update(gameTime, _controller.Player.LastMoveDirection, cursorWorld);
 
+        // ── Camera ──
         _camera.Pos = Vector2.Lerp(_camera.Pos, _controller.Player.Center, CAMERA_LERP);
 
-        _spawner.Update(gameTime, _camera.Pos, HQ.GraphicsDevice.Viewport);
-
-        int gained = _spawner.CollectOrbs(_controller.Player.Center);
+        // ── Experience ──
+        _xpSpawner.Update(gameTime, _camera.Pos, HQ.GraphicsDevice.Viewport);
+        int gained = _xpSpawner.CollectOrbs(_controller.Player.Center);
         if (gained > 0)
         {
             _xpBar.TriggerFlash();
             _controller.Player.AddExperience(gained);
+        }
+
+        // ── Enemies ──
+        var player = _controller.Player;
+
+        _enemySpawner.Update(gameTime, player.Position, player.Health.IsDead);
+        _enemySpawner.UpdateTanks(gameTime, player.Position,
+            player.Health.IsDead, _agentConfig, _forceSources);
+
+        // ── Boss ──
+        if (_bossSpawned && !_boss.IsDead)
+        {
+            Circle playerBounds = player.GetBounds();
+            _boss.Update(gameTime, player.Position, playerBounds, player.Health.IsDead);
+
+            if (_boss.PendingPlayerDamage > 0)
+                player.Health.TakeDamage(_boss.PendingPlayerDamage);
+
+            if (_boss.ActiveForceSources.Count > 0)
+                _forceSources.AddRange(_boss.ActiveForceSources);
+        }
+
+        // ── Collisions: melee combat ──
+        CheckMeleeHits(_enemySpawner.Walkers);
+        CheckMeleeHits(_enemySpawner.Runners);
+
+        // ── Collisions: tank agents → player ──
+        float playerRadius = player.GetBounds().Radius;
+        foreach (var tank in _enemySpawner.Tanks)
+        {
+            int damage = tank.ProcessAgentHits(player.Position, playerRadius);
+            if (damage > 0)
+                player.Health.TakeDamage(damage);
+        }
+
+        // ── Collisions: shooter projectiles → player ──
+        Circle shooterPlayerBounds = player.GetBounds();
+        foreach (var shooter in _enemySpawner.Shooters)
+        {
+            foreach (var p in shooter.Projectiles)
+            {
+                if (!p.IsDead && p.Bounds.Intersects(shooterPlayerBounds))
+                {
+                    player.Health.TakeDamage(shooter.Damage);
+                    p.Hit = true;
+                }
+            }
         }
     }
 
@@ -90,17 +285,41 @@ public class GameScene : Scene
 
         Matrix cameraMatrix = _camera.get_transformation(HQ.GraphicsDevice);
 
+        // World layer
         HQ.SpriteBatch.Begin(
             sortMode:        SpriteSortMode.Deferred,
             blendState:      BlendState.AlphaBlend,
             samplerState:    SamplerState.PointClamp,
             transformMatrix: cameraMatrix);
 
-        _spawner.Draw(HQ.SpriteBatch, _pixel);
+        _xpSpawner.Draw(HQ.SpriteBatch, _pixel);
         _controller.Draw(gameTime, HQ.SpriteBatch);
+        _enemySpawner.Draw(gameTime, HQ.SpriteBatch);
+
+        // Boss
+        if (_bossSpawned)
+        {
+            foreach (Circle zone in _boss.WarningZones)
+                DrawCircle(zone.Location.ToVector2(), zone.Radius, Color.Red * 0.3f);
+
+            if (!_boss.IsDead)
+            {
+                _boss.Draw(gameTime, HQ.SpriteBatch);
+                DrawHealthBar(
+                    _boss.Position + new Vector2(-30f, -_boss.Sprite.Height * 0.5f - 12f),
+                    60, 6,
+                    _boss.Health.CurrentHealth,
+                    _boss.Health.MaxHealth,
+                    Color.Red);
+            }
+        }
+
+        if (!_bossSpawned)
+            DrawHintSquare();
 
         HQ.SpriteBatch.End();
 
+        // UI layer
         HQ.SpriteBatch.Begin(
             sortMode:     SpriteSortMode.Deferred,
             blendState:   BlendState.AlphaBlend,
@@ -111,12 +330,14 @@ public class GameScene : Scene
                     _controller.Player.RequiredXp,
                     _controller.Player.Level);
 
+        DrawPlayerHp();
+
         _levelUp.Draw(HQ.SpriteBatch, _pixel, _font, HQ.GraphicsDevice.Viewport);
 
         HQ.SpriteBatch.End();
     }
 
-    // ── Карточки способностей ─────────────────────────────────────────────
+    // ── Ability Cards ─────────────────────────────────────────────
 
     private IAbility[] CreatePool() => new IAbility[]
     {
@@ -131,7 +352,6 @@ public class GameScene : Scene
         IAbility[] pool   = CreatePool();
         IAbility[] result = new IAbility[CARD_COUNT];
 
-        // Перемешиваем пул (Fisher-Yates)
         for (int i = pool.Length - 1; i > 0; i--)
         {
             int j = _random.Next(i + 1);
@@ -144,7 +364,7 @@ public class GameScene : Scene
         return result;
     }
 
-    // ── События ───────────────────────────────────────────────────────────
+    // ── Events ───────────────────────────────────────────────────────────
 
     private void HandleLevelUp()
     {
@@ -171,7 +391,69 @@ public class GameScene : Scene
         _isPaused = false;
     }
 
-    // ── Вспомогательное ───────────────────────────────────────────────────
+    // ── Boss ──────────────────────────────────────────────────────────────
+
+    private void SpawnBoss()
+    {
+        var bossRegion = MakeSolidRegion(40, 40, Color.DarkRed);
+        var bossSprite = MakeAnimSprite(bossRegion);
+        bossSprite.Scale = new Vector2(2f);
+
+        Vector2 spawnPos = _controller.Player.Position + new Vector2(400f, 0f);
+        _boss        = new Boss(bossSprite, spawnPos, hp: 20);
+        _bossSpawned = true;
+    }
+
+    // ── Collisions ──────────────────────────────────────────────────────────
+
+    private void CheckMeleeHits<T>(IReadOnlyList<T> enemies) where T : Enemy
+    {
+        var player = _controller.Player;
+
+        foreach (var enemy in enemies)
+        {
+            if (enemy.IsDead) continue;
+
+            if (enemy is Enemies.Walker.Walker w && w.IsAttacking && w.CanAttack)
+            {
+                if (Vector2.Distance(w.Position, player.Position) <= w.AttackRange
+                    && w.TryAttack())
+                    player.Health.TakeDamage(w.Damage);
+            }
+            else if (enemy is Enemies.Runner.Runner r && r.IsAttacking && r.CanAttack)
+            {
+                if (Vector2.Distance(r.Position, player.Position) <= r.AttackRange
+                    && r.TryAttack())
+                    player.Health.TakeDamage(r.Damage);
+            }
+        }
+    }
+
+    // ── Navigation ─────────────────────────────────────────────────────────
+
+    private void BuildNavGraph()
+    {
+        var a = new NavNode { Id = 1, Position = new Vector2(100, 100) };
+        var b = new NavNode { Id = 2, Position = new Vector2(400, 100) };
+        var c = new NavNode { Id = 3, Position = new Vector2(700, 100) };
+        var d = new NavNode { Id = 4, Position = new Vector2(400, 300) };
+        var e = new NavNode { Id = 5, Position = new Vector2(100, 500) };
+        var f = new NavNode { Id = 6, Position = new Vector2(700, 500) };
+
+        _nav.AddNode(a); _nav.AddNode(b); _nav.AddNode(c);
+        _nav.AddNode(d); _nav.AddNode(e); _nav.AddNode(f);
+
+        int id = 1;
+        _nav.AddHighway(Highway.Create(id++, 1, 2, a.Position, b.Position, 90f));
+        _nav.AddHighway(Highway.Create(id++, 2, 3, b.Position, c.Position, 90f));
+        _nav.AddHighway(Highway.Create(id++, 2, 4, b.Position, d.Position, 90f));
+        _nav.AddHighway(Highway.Create(id++, 4, 5, d.Position, e.Position, 90f));
+        _nav.AddHighway(Highway.Create(id++, 4, 6, d.Position, f.Position, 90f));
+        _nav.AddHighway(Highway.Create(id++, 1, 5, a.Position, e.Position, 90f));
+        _nav.AddHighway(Highway.Create(id++, 3, 6, c.Position, f.Position, 90f));
+    }
+
+    // ── Helper Methods for Drawing ─────────────────────────────────
 
     private Vector2 GetCursorWorld()
     {
@@ -180,12 +462,136 @@ public class GameScene : Scene
         return Vector2.Transform(new Vector2(mouse.X, mouse.Y), inv);
     }
 
+    private void DrawHealthBar(Vector2 pos, int width, int height,
+                                int current, int max, Color color)
+    {
+        float ratio = (float)current / max;
+
+        HQ.SpriteBatch.Draw(_pixel,
+            new Rectangle((int)pos.X, (int)pos.Y, width, height),
+            Color.Black * 0.7f);
+
+        HQ.SpriteBatch.Draw(_pixel,
+            new Rectangle((int)pos.X, (int)pos.Y, (int)(width * ratio), height),
+            color);
+    }
+
+    private void DrawCircle(Vector2 center, float radius, Color color, int segments = 48)
+    {
+        float   step = MathF.PI * 2f / segments;
+        Vector2 prev = center + new Vector2(radius, 0);
+
+        for (int i = 1; i <= segments; i++)
+        {
+            float   angle = step * i;
+            Vector2 next  = center + new Vector2(
+                MathF.Cos(angle) * radius,
+                MathF.Sin(angle) * radius);
+            DrawLine(prev, next, color, 2f);
+            prev = next;
+        }
+    }
+
+    private void DrawLine(Vector2 start, Vector2 end, Color color, float thickness)
+    {
+        Vector2 delta  = end - start;
+        float   length = delta.Length();
+        if (length < 0.001f) return;
+
+        float angle = MathF.Atan2(delta.Y, delta.X);
+        HQ.SpriteBatch.Draw(_pixel, start, null, color, angle,
+            Vector2.Zero, new Vector2(length, thickness),
+            SpriteEffects.None, 0f);
+    }
+
+    private void DrawHintSquare()
+    {
+        float pulse = (MathF.Sin((float)Environment.TickCount64 / 300f) + 1f) * 0.5f;
+
+        Vector2 topLeft = _camera.Pos + new Vector2(
+            -HQ.GraphicsDevice.Viewport.Width  * 0.5f + 10f,
+            -HQ.GraphicsDevice.Viewport.Height * 0.5f + 10f);
+
+        HQ.SpriteBatch.Draw(_pixel,
+            new Rectangle((int)topLeft.X, (int)topLeft.Y, 12, 12),
+            Color.Magenta * (0.4f + 0.6f * pulse));
+    }
+
+    private void DrawPlayerHp()
+    {
+        var player = _controller.Player;
+        string text = $"{player.Health.CurrentHealth}/{player.Health.MaxHealth}";
+        DrawPixelString(text, new Vector2(10, 30), 2, Color.LimeGreen);
+    }
+
+    // 3×5 bitmap glyphs
+    private static readonly Dictionary<char, byte[]> s_glyphs = new()
+    {
+        ['0'] = new byte[] { 0b111, 0b101, 0b101, 0b101, 0b111 },
+        ['1'] = new byte[] { 0b010, 0b110, 0b010, 0b010, 0b111 },
+        ['2'] = new byte[] { 0b111, 0b001, 0b111, 0b100, 0b111 },
+        ['3'] = new byte[] { 0b111, 0b001, 0b111, 0b001, 0b111 },
+        ['4'] = new byte[] { 0b101, 0b101, 0b111, 0b001, 0b001 },
+        ['5'] = new byte[] { 0b111, 0b100, 0b111, 0b001, 0b111 },
+        ['6'] = new byte[] { 0b111, 0b100, 0b111, 0b101, 0b111 },
+        ['7'] = new byte[] { 0b111, 0b001, 0b001, 0b001, 0b001 },
+        ['8'] = new byte[] { 0b111, 0b101, 0b111, 0b101, 0b111 },
+        ['9'] = new byte[] { 0b111, 0b101, 0b111, 0b001, 0b111 },
+        ['/'] = new byte[] { 0b001, 0b001, 0b010, 0b100, 0b100 },
+    };
+
+    private void DrawPixelString(string text, Vector2 pos, int scale, Color color)
+    {
+        float cursorX = pos.X;
+
+        foreach (char c in text)
+        {
+            if (s_glyphs.TryGetValue(c, out byte[] glyph))
+            {
+                for (int row = 0; row < 5; row++)
+                for (int col = 0; col < 3; col++)
+                {
+                    if ((glyph[row] & (1 << (2 - col))) != 0)
+                        HQ.SpriteBatch.Draw(_pixel,
+                            new Rectangle(
+                                (int)cursorX + col * scale,
+                                (int)pos.Y   + row * scale,
+                                scale, scale),
+                            color);
+                }
+                cursorX += 4 * scale;
+            }
+        }
+    }
+
+    // ── Texture helpers ───────────────────────────────────────────────────
+
+    private TextureRegion MakeSolidRegion(int w, int h, Color color)
+    {
+        var tex  = new Texture2D(HQ.GraphicsDevice, w, h);
+        var data = new Color[w * h];
+        Array.Fill(data, color);
+        tex.SetData(data);
+        return new TextureRegion(tex, 0, 0, w, h);
+    }
+
+    private AnimatedSprite MakeAnimSprite(TextureRegion region)
+    {
+        var anim   = new Animation(new List<TextureRegion> { region },
+                                   TimeSpan.FromMilliseconds(100));
+        var sprite = new AnimatedSprite(anim);
+        sprite.CenterOrigin();
+        return sprite;
+    }
+
+    // ── Cleanup ───────────────────────────────────────────────────────────
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            _controller.Player.OnLevelUp  -= HandleLevelUp;
-            _levelUp.OnCardChosen         -= HandleCardChosen;
+            _controller.Player.OnLevelUp -= HandleLevelUp;
+            _levelUp.OnCardChosen        -= HandleCardChosen;
             _pixel?.Dispose();
         }
         base.Dispose(disposing);
