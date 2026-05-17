@@ -8,8 +8,8 @@ using MainEngine.FlockEnemy;
 using MainEngine.Graphics;
 using MainEngine.Input;
 using MainEngine.Navigation;
-using LILITH.Core.Enemies;
 using LILITH.Core.Enemies.Boss;
+using LILITH.Core.Tools;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -22,7 +22,7 @@ namespace LILITH.Core.Scenes
         private Camera _camera;
 
         private Navigation _nav;
-        private EnemySpawner _spawner;
+        private WaveSpawner _spawner;
 
         private TextureRegion _agentRegion;
         private AgentConfig _agentConfig;
@@ -74,7 +74,13 @@ namespace LILITH.Core.Scenes
             BuildNavGraph();
 
             // ── Spawner ──
-            _spawner = new EnemySpawner();
+            _spawner = new WaveSpawner(new SpawnZoneConfig
+            {
+                Position = new Vector2(400, 300),
+                Shape = SpawnShape.Rectangle,
+                Width = 1200f,
+                Height = 900f
+            });
             _spawner.SetNavigation(_nav);
 
             _spawner.AddSpawnPoint(new Vector2(100, 100));
@@ -131,9 +137,9 @@ namespace LILITH.Core.Scenes
             });
 
             // ── Define waves ──
-            _spawner.AddWave(new Enemies.Wave
+            _spawner.AddWave(new Wave
             {
-                Entries = new List<Enemies.SpawnEntry>
+                Entries = new List<SpawnEntry>
                 {
                     new() { Type = EnemyType.Walker, Count = 3, DelayBetween = 0.8f },
                     new() { Type = EnemyType.Runner, Count = 2, DelayBetween = 0.4f },
@@ -141,9 +147,9 @@ namespace LILITH.Core.Scenes
                 DelayAfterWave = 6f
             });
 
-            _spawner.AddWave(new Enemies.Wave
+            _spawner.AddWave(new Wave
             {
-                Entries = new List<Enemies.SpawnEntry>
+                Entries = new List<SpawnEntry>
                 {
                     new() { Type = EnemyType.Shooter, Count = 2, DelayBetween = 1f },
                     new() { Type = EnemyType.Walker, Count = 4, DelayBetween = 0.6f },
@@ -152,9 +158,9 @@ namespace LILITH.Core.Scenes
                 DelayAfterWave = 8f
             });
 
-            _spawner.AddWave(new Enemies.Wave
+            _spawner.AddWave(new Wave
             {
-                Entries = new List<Enemies.SpawnEntry>
+                Entries = new List<SpawnEntry>
                 {
                     new() { Type = EnemyType.Tank, Count = 1, DelayBetween = 0f },
                     new() { Type = EnemyType.Shooter, Count = 2, DelayBetween = 1f },
@@ -174,7 +180,11 @@ namespace LILITH.Core.Scenes
 
             _player.Update(gameTime);
 
-            _spawner.Update(gameTime, _player.Position, _player.Health.IsDead);
+            Vector2 viewSize = new Vector2(
+                HQ.GraphicsDevice.Viewport.Width,
+                HQ.GraphicsDevice.Viewport.Height);
+
+            _spawner.Update(gameTime, _player.Position, viewSize, _player.Health.IsDead);
             _spawner.UpdateTanks(gameTime, _player.Position,
                 _player.Health.IsDead, _agentConfig, _agentForceSources);
 
@@ -187,7 +197,6 @@ namespace LILITH.Core.Scenes
                 if (_boss.PendingPlayerDamage > 0)
                     _player.Health.TakeDamage(_boss.PendingPlayerDamage);
 
-                // Shockwaves scatter tank agents
                 if (_boss.ActiveForceSources.Count > 0)
                     _agentForceSources.AddRange(_boss.ActiveForceSources);
             }
@@ -236,7 +245,6 @@ namespace LILITH.Core.Scenes
             // ── Boss ──
             if (_bossSpawned)
             {
-                // Warning zones (telegraphs + flashes)
                 foreach (Circle zone in _boss.WarningZones)
                 {
                     DrawCircle(
@@ -443,7 +451,7 @@ namespace LILITH.Core.Scenes
                             }
                         }
                     }
-                    cursorX += 4 * scale; // 3 wide + 1 gap
+                    cursorX += 4 * scale;
                 }
             }
         }
