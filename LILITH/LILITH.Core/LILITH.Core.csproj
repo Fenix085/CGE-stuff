@@ -27,6 +27,11 @@
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\player.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+</ItemGroup>
+  <ItemGroup>
   <ProjectReference Include="..\..\MainEngine\MainEngine.csproj" />
 </ItemGroup>
 </Project>

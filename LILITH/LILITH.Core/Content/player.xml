@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Atlas>
+
+  <Texture>banana</Texture>
+
+  <Regions>
+    <!-- Idle: кадры 1-4 -->
+    <Region name="idle_0" x="0"   y="0" width="64" height="64" />
+    <Region name="idle_1" x="64"  y="0" width="64" height="64" />
+    <Region name="idle_2" x="128" y="0" width="64" height="64" />
+    <Region name="idle_3" x="192" y="0" width="64" height="64" />
+
+    <!-- Walk: кадры 5-8 -->
+    <Region name="walk_0" x="256" y="0" width="64" height="64" />
+    <Region name="walk_1" x="320" y="0" width="64" height="64" />
+    <Region name="walk_2" x="384" y="0" width="64" height="64" />
+    <Region name="walk_3" x="448" y="0" width="64" height="64" />
+
+    <!-- Death: кадры 9-15 -->
+    <Region name="death_0" x="512" y="0" width="64" height="64" />
+    <Region name="death_1" x="576" y="0" width="64" height="64" />
+    <Region name="death_2" x="640" y="0" width="64" height="64" />
+    <Region name="death_3" x="704" y="0" width="64" height="64" />
+    <Region name="death_4" x="768" y="0" width="64" height="64" />
+    <Region name="death_5" x="832" y="0" width="64" height="64" />
+    <Region name="death_6" x="896" y="0" width="64" height="64" />
+  </Regions>
+
+  <Animations>
+    <Animation name="idle" delay="150">
+      <Frame region="idle_0" />
+      <Frame region="idle_1" />
+      <Frame region="idle_2" />
+      <Frame region="idle_3" />
+    </Animation>
+
+    <Animation name="walk" delay="100">
+      <Frame region="walk_0" />
+      <Frame region="walk_1" />
+      <Frame region="walk_2" />
+      <Frame region="walk_3" />
+    </Animation>
+
+    <Animation name="death" delay="120">
+      <Frame region="death_0" />
+      <Frame region="death_1" />
+      <Frame region="death_2" />
+      <Frame region="death_3" />
+      <Frame region="death_4" />
+      <Frame region="death_5" />
+      <Frame region="death_6" />
+    </Animation>
+  </Animations>
+
+</Atlas>

@@ -6,9 +6,6 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace LILITH.Core.Scenes;
 
-/// <summary>
-/// Главное меню игры. Кнопки: Play (→ выбор уровня), Exit.
-/// </summary>
 public class MainMenuScene : Scene
 {
     private Texture2D   _pixel = null!;
@@ -19,7 +16,7 @@ public class MainMenuScene : Scene
 
     public override void Initialize()
     {
-        HQ.ExitOnEscape = false; // чтобы Esc не закрывал игру
+        HQ.ExitOnEscape = false; 
         base.Initialize();
     }
 

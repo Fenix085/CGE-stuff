@@ -76,7 +76,9 @@ public class GameScene : Scene
         _font = Content.Load<SpriteFont>("DefaultFont");
 
         // ── Player ──
-        var player = new Player(new Vector2(400, 300), hp: 100, pixel: _pixel);
+        var atlas  = TextureAtlas.FromFile(Content, "player.xml");
+        var idle   = atlas.CreateAnimatedSprite("idle");
+        var player = new Player(idle, new Vector2(400, 300), hp: 100);
         _controller = new PlayerController(player, _pixel);
         _controller.AddAbility(new AutoShootAbility());
 

@@ -7,9 +7,6 @@ using Microsoft.Xna.Framework.Input;
 
 namespace LILITH.Core.Scenes;
 
-/// <summary>
-/// Экран выбора уровня. Пока один уровень — Level 1.
-/// </summary>
 public class LevelSelectScene : Scene
 {
     private Texture2D   _pixel = null!;
@@ -49,7 +46,7 @@ public class LevelSelectScene : Scene
         _btnLevel1.Update(gameTime);
         _btnBack.Update(gameTime);
 
-        // Esc — назад в главное меню
+        // ESC back to menu
         KeyboardState keys = Keyboard.GetState();
         if (keys.IsKeyDown(Keys.Escape) && _prevKeys.IsKeyUp(Keys.Escape))
             HQ.ChangeScene(new MainMenuScene());
