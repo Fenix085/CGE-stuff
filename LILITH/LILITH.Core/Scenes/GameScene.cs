@@ -41,12 +41,19 @@ public class GameScene : Scene
     private IAbility[] _currentCards = Array.Empty<IAbility>();
     private readonly Random _random  = new();
 
-    // ── Enemies ─────────────────────────────────────────────────────────────
+    // ── Pause Menu ────────────────────────────────────────────────────────
 
-    private EnemySpawner              _enemySpawner   = null!;
-    private Navigation                _nav            = null!;
-    private AgentConfig               _agentConfig    = null!;
-    private TextureRegion             _agentRegion    = null!;
+    private bool          _isPauseMenu = false;
+    private Button        _btnResume   = null!;
+    private Button        _btnMainMenu = null!;
+    private KeyboardState _prevKeys;
+
+    // ── Enemies ──────────────────────────────────────────────────────────
+
+    private EnemySpawner               _enemySpawner  = null!;
+    private Navigation                 _nav           = null!;
+    private AgentConfig                _agentConfig   = null!;
+    private TextureRegion              _agentRegion   = null!;
     private readonly List<ForceSource> _forceSources  = new();
 
     // ── Boss ──────────────────────────────────────────────────────────────
@@ -54,7 +61,7 @@ public class GameScene : Scene
     private Boss _boss        = null!;
     private bool _bossSpawned = false;
 
-    // ── Initialization ─────────────────────────────────────────────────────
+    // ── Initialization ────────────────────────────────────────────────────
 
     public override void Initialize()
     {
@@ -64,7 +71,6 @@ public class GameScene : Scene
 
     public override void LoadContent()
     {
-        
         _pixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
 
@@ -88,6 +94,16 @@ public class GameScene : Scene
         _levelUp.OnCardChosen += HandleCardChosen;
 
         _xpSpawner.SpawnInitial(player.Center, HQ.GraphicsDevice.Viewport);
+
+        // ── Pause menu buttons ──
+        int cx = HQ.GraphicsDevice.Viewport.Width  / 2;
+        int cy = HQ.GraphicsDevice.Viewport.Height / 2;
+
+        _btnResume   = new Button(new Rectangle(cx - 110, cy - 65, 220, 50), "RESUME");
+        _btnMainMenu = new Button(new Rectangle(cx - 110, cy + 15,  220, 50), "MAIN MENU");
+
+        _btnResume.OnClick   += () => _isPauseMenu = false;
+        _btnMainMenu.OnClick += () => HQ.ChangeScene(new MainMenuScene());
 
         // ── Enemies ──
         _agentRegion = MakeSolidRegion(8, 8, Color.White);
@@ -204,11 +220,24 @@ public class GameScene : Scene
 
     public override void Update(GameTime gameTime)
     {
-        // UI updates first, so that they appear above the gameplay layer
+        // Esc переключает меню паузы (только если не открыт экран левелапа)
+        KeyboardState keys = Keyboard.GetState();
+        if (keys.IsKeyDown(Keys.Escape) && _prevKeys.IsKeyUp(Keys.Escape) && !_isPaused)
+            _isPauseMenu = !_isPauseMenu;
+        _prevKeys = keys;
+
+        // Меню паузы перехватывает весь ввод
+        if (_isPauseMenu)
+        {
+            _btnResume.Update(gameTime);
+            _btnMainMenu.Update(gameTime);
+            return;
+        }
+
+        // UI обновляется даже при левелап-паузе
         _xpBar.Update(gameTime);
         _levelUp.Update(gameTime, HQ.GraphicsDevice.Viewport);
 
-        // Boss on F5
         if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.F5))
             SpawnBoss();
 
@@ -253,7 +282,7 @@ public class GameScene : Scene
                 _forceSources.AddRange(_boss.ActiveForceSources);
         }
 
-        // ── Collisions: melee combat ──
+        // ── Collisions: melee ──
         CheckMeleeHits(_enemySpawner.Walkers);
         CheckMeleeHits(_enemySpawner.Runners);
 
@@ -279,7 +308,6 @@ public class GameScene : Scene
                 }
             }
         }
-
     }
 
     // ── Draw ──────────────────────────────────────────────────────────────
@@ -301,7 +329,6 @@ public class GameScene : Scene
         _controller.Draw(gameTime, HQ.SpriteBatch);
         _enemySpawner.Draw(gameTime, HQ.SpriteBatch);
 
-        // Boss
         if (_bossSpawned)
         {
             foreach (Circle zone in _boss.WarningZones)
@@ -339,10 +366,52 @@ public class GameScene : Scene
 
         _levelUp.Draw(HQ.SpriteBatch, _pixel, _font, HQ.GraphicsDevice.Viewport);
 
+        if (_isPauseMenu)
+            DrawPauseMenu();
+
         HQ.SpriteBatch.End();
     }
 
-    // ── Ability Cards ─────────────────────────────────────────────
+    // ── Pause Menu ────────────────────────────────────────────────────────
+
+    private void DrawPauseMenu()
+    {
+        var vp = HQ.GraphicsDevice.Viewport;
+
+        // Затемнение
+        HQ.SpriteBatch.Draw(_pixel,
+            new Rectangle(0, 0, vp.Width, vp.Height),
+            new Color(0, 0, 0, 160));
+
+        // Панель
+        int pw = 280, ph = 200;
+        int px = (vp.Width  - pw) / 2;
+        int py = (vp.Height - ph) / 2;
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px, py, pw, ph), new Color(20, 20, 40, 240));
+
+        // Рамка
+        const int B = 2;
+        var border = new Color(160, 160, 220, 200);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px,      py,        pw, B),  border);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px,      py+ph-B,   pw, B),  border);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px,      py,        B,  ph), border);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px+pw-B, py,        B,  ph), border);
+
+        // Заголовок PAUSED — сдвинут выше панели
+        if (_font != null)
+        {
+            string  title = "PAUSED";
+            Vector2 size  = _font.MeasureString(title);
+            Vector2 pos   = new Vector2((vp.Width - size.X) * 0.5f, py - 35);
+            HQ.SpriteBatch.DrawString(_font, title, pos + new Vector2(1, 1), Color.Black);
+            HQ.SpriteBatch.DrawString(_font, title, pos, Color.White);
+        }
+
+        _btnResume.Draw(HQ.SpriteBatch, _pixel, _font);
+        _btnMainMenu.Draw(HQ.SpriteBatch, _pixel, _font);
+    }
+
+    // ── Ability Cards ─────────────────────────────────────────────────────
 
     private IAbility[] CreatePool() => new IAbility[]
     {
@@ -370,7 +439,7 @@ public class GameScene : Scene
         return result;
     }
 
-    // ── Events ───────────────────────────────────────────────────────────
+    // ── Events ────────────────────────────────────────────────────────────
 
     private void HandleLevelUp()
     {
@@ -424,10 +493,11 @@ public class GameScene : Scene
                         if (enemy.Health.IsDead)
                             enemy.ApplyDeath();
                             _xpSpawner.SpawnOrb(enemy.Position);
-                        break; 
+                        break;
                     }
                 }
             }
+
             if (_bossSpawned && !_boss.IsDead)
             {
                 Circle bossBounds = _boss.GetBounds();
@@ -461,7 +531,7 @@ public class GameScene : Scene
         _bossSpawned = true;
     }
 
-    // ── Collisions ──────────────────────────────────────────────────────────
+    // ── Collisions ────────────────────────────────────────────────────────
 
     private void CheckMeleeHits<T>(IReadOnlyList<T> enemies) where T : Enemy
     {
@@ -486,7 +556,7 @@ public class GameScene : Scene
         }
     }
 
-    // ── Navigation ─────────────────────────────────────────────────────────
+    // ── Navigation ────────────────────────────────────────────────────────
 
     private void BuildNavGraph()
     {
@@ -539,7 +609,7 @@ public class GameScene : Scene
         return bestDir;
     }
 
-    // ── Helper Methods for Drawing ─────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────
 
     private Vector2 GetCursorWorld()
     {
@@ -605,12 +675,11 @@ public class GameScene : Scene
 
     private void DrawPlayerHp()
     {
-        var player = _controller.Player;
-        string text = $"{player.Health.CurrentHealth}/{player.Health.MaxHealth}";
+        var    player = _controller.Player;
+        string text   = $"{player.Health.CurrentHealth}/{player.Health.MaxHealth}";
         DrawPixelString(text, new Vector2(10, 30), 2, Color.LimeGreen);
     }
 
-    // 3×5 bitmap glyphs
     private static readonly Dictionary<char, byte[]> s_glyphs = new()
     {
         ['0'] = new byte[] { 0b111, 0b101, 0b101, 0b101, 0b111 },
