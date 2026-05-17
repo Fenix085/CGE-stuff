@@ -8,9 +8,8 @@ private int _currentFrame;
 private Animation _animation;
 private TimeSpan _elapsed;
 
-/// <summary>
-/// Gets or Sets the animation for this animated sprite.
-/// </summary>
+public bool PlayOnce    { get; set; } = false;
+public bool IsFinished  { get; private set; } = false;
 public Animation Animation
 {
     get => _animation;
@@ -55,7 +54,16 @@ public override void Update(GameTime gameTime)
 
         if (_currentFrame >= _animation.Frames.Count)
         {
-            _currentFrame = 0;
+            if (PlayOnce)
+                {
+                    
+                    _currentFrame = _animation.Frames.Count - 1;
+                    IsFinished    = true;
+                }
+            else
+                {
+                    _currentFrame = 0;
+                }
         }
 
         Region = _animation.Frames[_currentFrame];

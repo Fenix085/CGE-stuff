@@ -28,6 +28,7 @@ public class GameScene : Scene
     private SpriteFont       _font       = null!;
 
     private const float CAMERA_LERP = 0.1f;
+    private float _isDeathTimer;
 
     // ── Exp and UI ─────────────────────────────────────────────────────────
 
@@ -39,6 +40,8 @@ public class GameScene : Scene
     private const int  CARD_COUNT    = 3;
     private IAbility[] _currentCards = Array.Empty<IAbility>();
     private readonly Random _random  = new();
+    private GameOverScreen _gameOver = null!;
+    private bool           _isGameOver;
 
     // ── Pause Menu ────────────────────────────────────────────────────────
 
@@ -81,7 +84,7 @@ public class GameScene : Scene
         var walk   = atlas.CreateAnimatedSprite("walk");
         var death  = atlas.CreateAnimatedSprite("death");
 
-        var player = new Player(idle, new Vector2(400, 300), hp: 100);
+        var player = new Player(idle, new Vector2(400, 300), hp: 50);
         _controller = new PlayerController(player, _pixel, idle, walk, death);
         _controller.AddAbility(new AutoShootAbility());
 
@@ -93,6 +96,7 @@ public class GameScene : Scene
         _xpSpawner = new ExperienceSpawner();
         _xpBar     = new ExperienceBar();
         _levelUp   = new LevelUpScreen();
+        _gameOver = new GameOverScreen();
 
         player.OnLevelUp      += HandleLevelUp;
         _levelUp.OnCardChosen += HandleCardChosen;
@@ -248,9 +252,27 @@ public class GameScene : Scene
         if (_isPaused) return;
 
         // ── Player ──
+        if (_isGameOver)
+        {
+            _isDeathTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (_isDeathTimer >= 3f && !_gameOver.IsVisible)
+                _gameOver.Show(HQ.GraphicsDevice.Viewport, _font);
+
+            _gameOver.Update(gameTime, HQ.GraphicsDevice.Viewport);
+
+            
+            _controller.UpdateDeathAnimation(gameTime);
+            return;
+        }
         Vector2 nearestEnemyDir = GetNearestEnemyDirection();
         Vector2 cursorWorld     = GetCursorWorld();
         _controller.Update(gameTime, nearestEnemyDir, cursorWorld);
+        if (!_isGameOver && _controller.Player.Health.IsDead)
+        {
+            _isGameOver   = true;
+            _isDeathTimer = 0f;
+        }
         
         CheckAbilityHits();
 
@@ -375,7 +397,8 @@ public class GameScene : Scene
 
         if (_isPauseMenu)
             DrawPauseMenu();
-
+        
+        _gameOver.Draw(HQ.SpriteBatch, _pixel, HQ.GraphicsDevice.Viewport);
         HQ.SpriteBatch.End();
     }
 

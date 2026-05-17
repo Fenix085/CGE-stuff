@@ -43,6 +43,9 @@ public class PlayerController
         _walkAnim     = walk;
         _deathAnim    = death;
         _prevPosition = player.Position;
+
+        if (_deathAnim != null)
+        _deathAnim.PlayOnce = true;
     }
 
     // ── Abilities ─────────────────────────────────────────────────────────
@@ -97,6 +100,12 @@ public class PlayerController
             Player.Sprite = target;
 
         Player.Sprite.Update(gameTime);
+    }
+
+    public void UpdateDeathAnimation(GameTime gameTime)
+    {
+        if (_deathAnim != null && !_deathAnim.IsFinished)
+            _deathAnim.Update(gameTime);
     }
 
     // ── Draw ──────────────────────────────────────────────────────────────
