@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using LILITH.Abilities;
-using LILITH.Core;
-using LILITH.Core.Enemies;
 using LILITH.Core.Enemies.Boss;
 using LILITH.Items;
 using LILITH.UI;
@@ -16,6 +14,7 @@ using MainEngine.Scenes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using LILITH.Core.Tools;
 
 namespace LILITH.Core.Scenes;
 
@@ -50,7 +49,7 @@ public class GameScene : Scene
 
     // ── Enemies ──────────────────────────────────────────────────────────
 
-    private EnemySpawner               _enemySpawner  = null!;
+    private WaveSpawner               _enemySpawner  = null!;
     private Navigation                 _nav           = null!;
     private AgentConfig                _agentConfig   = null!;
     private TextureRegion              _agentRegion   = null!;
@@ -126,7 +125,7 @@ public class GameScene : Scene
         _nav = new Navigation();
         BuildNavGraph();
 
-        _enemySpawner = new EnemySpawner();
+        _enemySpawner = new WaveSpawner();
         _enemySpawner.SetNavigation(_nav);
 
         _enemySpawner.AddSpawnPoint(new Vector2(100, 100));
@@ -265,7 +264,10 @@ public class GameScene : Scene
         // ── Enemies ──
         var player = _controller.Player;
 
-        _enemySpawner.Update(gameTime, player.Position, player.Health.IsDead);
+        _enemySpawner.Update(gameTime, player.Position,
+        new Vector2(HQ.GraphicsDevice.Viewport.Width,
+                    HQ.GraphicsDevice.Viewport.Height),
+        player.Health.IsDead);
         _enemySpawner.UpdateTanks(gameTime, player.Position,
             player.Health.IsDead, _agentConfig, _forceSources);
 

@@ -1,11 +1,9 @@
-using LILITH.Core.Scenes;
+﻿using LILITH.Core.Scenes;
 using MainEngine;
 
 namespace LILITH.Core;
 
-/// <summary>
-/// Точка входа. Наследуется от HQ, стартует с главного меню.
-/// </summary>
+
 public class Game1 : HQ
 {
     public Game1()
@@ -15,7 +13,7 @@ public class Game1 : HQ
 
     protected override void Initialize()
     {
-        base.Initialize(); // HQ инициализирует Input, Audio, GraphicsDevice
+        base.Initialize(); 
 
         HQ.ChangeScene(new MainMenuScene());
     }
