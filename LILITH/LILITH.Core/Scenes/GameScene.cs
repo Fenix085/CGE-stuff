@@ -37,6 +37,7 @@ public class GameScene : Scene
     private float _isDeathTimer;
     private bool _deathSoundPlayed;
     
+    
 
     // ── Exp and UI ─────────────────────────────────────────────────────────
 
@@ -52,6 +53,9 @@ public class GameScene : Scene
     private GameOverScreen _gameOver = null!;
     private bool           _isGameOver;
     private bool _isOptionsMenu;
+    private VictoryScreen _victoryScreen = null!;
+    private bool _isVictory;
+    private float _victoryTimer;
 
     // ── Pause Menu ────────────────────────────────────────────────────────
 
@@ -87,6 +91,8 @@ public class GameScene : Scene
     {
         _pixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
+        _gameOver = new GameOverScreen();
+        _victoryScreen = new VictoryScreen();
 
         _font = Content.Load<SpriteFont>("DefaultFont");
 
@@ -468,6 +474,17 @@ _enemySpawner.Start();
             _controller.UpdateDeathAnimation(gameTime);
             return;
         }
+        if (_isVictory)
+        {
+            _victoryTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (_victoryTimer >= 5f && !_victoryScreen.IsVisible)
+                _victoryScreen.Show(HQ.GraphicsDevice.Viewport, _font);
+
+            _victoryScreen.Update(gameTime, HQ.GraphicsDevice.Viewport);
+
+            return;
+        }
         Vector2 nearestEnemyDir = GetNearestEnemyDirection();
         Vector2 cursorWorld;
         Vector2 rightStick = pad.RightThumbStick;
@@ -672,6 +689,7 @@ _enemySpawner.Start();
             DrawPauseMenu();
         
         _gameOver.Draw(HQ.SpriteBatch, _pixel, HQ.GraphicsDevice.Viewport);
+        _victoryScreen.Draw(HQ.SpriteBatch, _pixel, HQ.GraphicsDevice.Viewport);
         HQ.SpriteBatch.End();
     }
 
@@ -889,6 +907,11 @@ _enemySpawner.Start();
                         {
                             _boss.ApplyDeath();
                             _xpSpawner.SpawnOrb(_boss.Position, value: 10);
+
+                            _isVictory = true;
+                            _victoryTimer = 0f;
+
+                            return;
                         }
                         break;
                     }
