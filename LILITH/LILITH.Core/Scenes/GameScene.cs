@@ -55,6 +55,7 @@ public class GameScene : Scene
 
     private bool          _isPauseMenu = false;
     private Button        _btnResume   = null!;
+    private Button        _btnOptions  = null!;
     private Button        _btnMainMenu = null!;
     private KeyboardState _prevKeys;
 
@@ -143,7 +144,7 @@ public class GameScene : Scene
         int cx = HQ.GraphicsDevice.Viewport.Width  / 2;
         int cy = HQ.GraphicsDevice.Viewport.Height / 2;
 
-        _btnResume   = new Button(new Rectangle(cx - 130, cy - 65, 260, 52), "RESUME")
+        _btnResume   = new Button(new Rectangle(cx - 130, cy - 95, 260, 52), "RESUME")
         {
             ColorNormal  = new Color(26,  13,  40,  230),
             ColorHover   = new Color(50,  25,  70,  240),
@@ -152,7 +153,16 @@ public class GameScene : Scene
             ColorShadow  = new Color(0,   0,   0,   0),
         };
 
-        _btnMainMenu = new Button(new Rectangle(cx - 130, cy + 3, 260, 52), "MAIN MENU")
+        _btnOptions = new Button(new Rectangle(cx - 130, cy - 27, 260, 52), "OPTIONS")
+        {
+            ColorNormal  = new Color(26,  13,  40,  230),
+            ColorHover   = new Color(50,  25,  70,  240),
+            ColorPressed = new Color(15,  8,   25,  255),
+            ColorText    = new Color(200, 168, 220),
+            ColorShadow  = new Color(0,   0,   0,   0),
+        };
+
+        _btnMainMenu = new Button(new Rectangle(cx - 130, cy + 41, 260, 52), "MAIN MENU")
         {
             ColorNormal  = new Color(26,  13,  40,  230),
             ColorHover   = new Color(50,  25,  70,  240),
@@ -165,6 +175,11 @@ public class GameScene : Scene
         {
             HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
             _isPauseMenu = false;
+        };
+        _btnOptions.OnClick += () =>
+        {
+            HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
+            HQ.ChangeScene(new OptionsScene(() => new MainMenuScene()));
         };
         _btnMainMenu.OnClick += () =>
         {
@@ -362,6 +377,7 @@ _enemySpawner.Start();
         if (_isPauseMenu)
         {
             _btnResume.Update(gameTime);
+            _btnOptions.Update(gameTime);
             _btnMainMenu.Update(gameTime);
             return;
         }
@@ -550,7 +566,7 @@ _enemySpawner.Start();
             new Color(0, 0, 0, 160));
 
         // Panel background with gothic borders
-        int pw = 360, ph = 260;
+        int pw = 360, ph = 300;
         int px = (vp.Width  - pw) / 2;
         int py = (vp.Height - ph) / 2 - 20;
 
@@ -588,6 +604,7 @@ _enemySpawner.Start();
         }
 
         DrawGothicButton(_btnResume);
+        DrawGothicButton(_btnOptions);
         DrawGothicButton(_btnMainMenu);
     }
 
