@@ -98,8 +98,23 @@ public class GameScene : Scene
         int cx = HQ.GraphicsDevice.Viewport.Width  / 2;
         int cy = HQ.GraphicsDevice.Viewport.Height / 2;
 
-        _btnResume   = new Button(new Rectangle(cx - 110, cy - 65, 220, 50), "RESUME");
-        _btnMainMenu = new Button(new Rectangle(cx - 110, cy + 15,  220, 50), "MAIN MENU");
+        _btnResume   = new Button(new Rectangle(cx - 130, cy - 65, 260, 52), "RESUME")
+        {
+            ColorNormal  = new Color(26,  13,  40,  230),
+            ColorHover   = new Color(50,  25,  70,  240),
+            ColorPressed = new Color(15,  8,   25,  255),
+            ColorText    = new Color(200, 168, 220),
+            ColorShadow  = new Color(0,   0,   0,   0),
+        };
+
+        _btnMainMenu = new Button(new Rectangle(cx - 130, cy + 3, 260, 52), "MAIN MENU")
+        {
+            ColorNormal  = new Color(26,  13,  40,  230),
+            ColorHover   = new Color(50,  25,  70,  240),
+            ColorPressed = new Color(15,  8,   25,  255),
+            ColorText    = new Color(200, 168, 220),
+            ColorShadow  = new Color(0,   0,   0,   0),
+        };
 
         _btnResume.OnClick   += () => _isPauseMenu = false;
         _btnMainMenu.OnClick += () => HQ.ChangeScene(new MainMenuScene());
@@ -382,31 +397,83 @@ public class GameScene : Scene
             new Color(0, 0, 0, 160));
 
         // Панель
-        int pw = 280, ph = 200;
+        int pw = 360, ph = 260;
         int px = (vp.Width  - pw) / 2;
-        int py = (vp.Height - ph) / 2;
-        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px, py, pw, ph), new Color(20, 20, 40, 240));
+        int py = (vp.Height - ph) / 2 - 20;
 
-        // Рамка
-        const int B = 2;
-        var border = new Color(160, 160, 220, 200);
-        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px,      py,        pw, B),  border);
-        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px,      py+ph-B,   pw, B),  border);
-        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px,      py,        B,  ph), border);
-        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px+pw-B, py,        B,  ph), border);
+        // Внешняя рамка готическая
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px, py, pw, ph), new Color(122, 85, 144));
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + 1, py + 1, pw - 2, ph - 2), new Color(18, 10, 30, 245));
+        // Внутренняя рамка
+        const int B = 4;
+        Color innerBorder = new Color(90, 53, 112);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + B, py + B, pw - B * 2, 1), innerBorder);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + B, py + ph - B, pw - B * 2, 1), innerBorder);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + B, py + B, 1, ph - B * 2), innerBorder);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + pw - B, py + B, 1, ph - B * 2), innerBorder);
 
-        // Заголовок PAUSED — сдвинут выше панели
+        // Угловые ромбики панели
+        DrawDiamond(px,      py,      4, new Color(147, 112, 168, 180));
+        DrawDiamond(px + pw, py,      4, new Color(147, 112, 168, 180));
+        DrawDiamond(px,      py + ph, 4, new Color(147, 112, 168, 180));
+        DrawDiamond(px + pw, py + ph, 4, new Color(147, 112, 168, 180));
+
+        // Заголовок PAUSED
         if (_font != null)
         {
             string  title = "PAUSED";
             Vector2 size  = _font.MeasureString(title);
-            Vector2 pos   = new Vector2((vp.Width - size.X) * 0.5f, py - 35);
-            HQ.SpriteBatch.DrawString(_font, title, pos + new Vector2(1, 1), Color.Black);
-            HQ.SpriteBatch.DrawString(_font, title, pos, Color.White);
+            Vector2 pos = new Vector2((vp.Width - size.X) * 0.5f, py + 25);
+            HQ.SpriteBatch.DrawString(_font, title, pos + new Vector2(2, 2), new Color(0, 0, 0) * 0.6f);
+            HQ.SpriteBatch.DrawString(_font, title, pos, new Color(212, 184, 224));
+
+            // Линия под заголовком
+            HQ.SpriteBatch.Draw(_pixel,
+               new Rectangle(px + 20, (int)(py + 25 + size.Y + 4), pw - 40, 1),
+                new Color(122, 85, 144, 160));
         }
 
-        _btnResume.Draw(HQ.SpriteBatch, _pixel, _font);
-        _btnMainMenu.Draw(HQ.SpriteBatch, _pixel, _font);
+        DrawGothicButton(_btnResume);
+        DrawGothicButton(_btnMainMenu);
+    }
+
+    private void DrawGothicButton(Button btn)
+    {
+        var r = btn.Bounds;
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(r.X, r.Y, r.Width, r.Height), new Color(122, 85, 144));
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(r.X + 1, r.Y + 1, r.Width - 2, r.Height - 2),
+            btn.IsHovered ? new Color(50, 25, 70, 240) : new Color(26, 13, 40, 230));
+
+        const int B = 4;
+        Color inner = new Color(90, 53, 112);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(r.X + B, r.Y + B, r.Width - B * 2, 1), inner);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(r.X + B, r.Y + r.Height - B, r.Width - B * 2, 1), inner);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(r.X + B, r.Y + B, 1, r.Height - B * 2), inner);
+        HQ.SpriteBatch.Draw(_pixel, new Rectangle(r.X + r.Width - B, r.Y + B, 1, r.Height - B * 2), inner);
+
+        int mid = r.Y + r.Height / 2;
+        DrawDiamond(r.X + 15,           mid, 5, new Color(147, 112, 168, 180));
+        DrawDiamond(r.X + r.Width - 15, mid, 5, new Color(147, 112, 168, 180));
+
+        if (_font != null)
+        {
+            Vector2 size = _font.MeasureString(btn.Label);
+            Vector2 pos  = new Vector2(
+                r.X + (r.Width  - size.X) * 0.5f,
+                r.Y + (r.Height - size.Y) * 0.5f);
+            HQ.SpriteBatch.DrawString(_font, btn.Label, pos + new Vector2(1, 2), new Color(0, 0, 0) * 0.5f);
+            HQ.SpriteBatch.DrawString(_font, btn.Label, pos,
+                btn.IsHovered ? new Color(240, 210, 255) : new Color(200, 168, 220));
+        }
+    }
+
+    private void DrawDiamond(int cx, int cy, int size, Color color)
+    {
+        for (int dy = -size; dy <= size; dy++)
+        {
+            int dx = size - Math.Abs(dy);
+            HQ.SpriteBatch.Draw(_pixel, new Rectangle(cx - dx, cy + dy, dx * 2, 1), color);
+        }
     }
 
     // ── Ability Cards ─────────────────────────────────────────────────────
