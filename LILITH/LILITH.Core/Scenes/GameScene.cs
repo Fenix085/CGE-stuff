@@ -143,10 +143,13 @@ public class GameScene : Scene
         _enemySpawner = new WaveSpawner();
         _enemySpawner.SetNavigation(_nav);
 
-        _enemySpawner.AddSpawnPoint(new Vector2(100, 100));
-        _enemySpawner.AddSpawnPoint(new Vector2(700, 100));
-        _enemySpawner.AddSpawnPoint(new Vector2(700, 500));
-        _enemySpawner.AddSpawnPoint(new Vector2(100, 500));
+        _enemySpawner = new WaveSpawner(new SpawnZoneConfig
+        {
+            Shape          = SpawnShape.Circle,
+            Radius         = 600f,   
+            ViewPadding    = 100f,   
+            AllowSpawnInView = false 
+        });
 
         _enemySpawner.RegisterFactory(EnemyType.Walker, pos =>
         {
@@ -199,39 +202,66 @@ public class GameScene : Scene
             };
         });
 
-        _enemySpawner.AddWave(new Wave
-        {
-            Entries = new List<SpawnEntry>
-            {
-                new() { Type = EnemyType.Walker, Count = 10, DelayBetween = 0.8f },
-                new() { Type = EnemyType.Runner, Count = 10, DelayBetween = 0.4f },
-            },
-            DelayAfterWave = 6f
-        });
+        // Волна 1 — знакомство
+_enemySpawner.AddWave(new Wave
+{
+    Entries = new List<SpawnEntry>
+    {
+        new() { Type = EnemyType.Walker, Count = 5, DelayBetween = 1.0f },
+    },
+    WaitForClear   = true,
+    DelayAfterWave = 5f
+});
 
-        _enemySpawner.AddWave(new Wave
-        {
-            Entries = new List<SpawnEntry>
-            {
-                new() { Type = EnemyType.Shooter, Count = 2, DelayBetween = 1f   },
-                new() { Type = EnemyType.Walker,  Count = 4, DelayBetween = 0.6f },
-                new() { Type = EnemyType.Runner,  Count = 3, DelayBetween = 0.3f },
-            },
-            DelayAfterWave = 8f
-        });
+// Волна 2 — добавляем бегунов
+_enemySpawner.AddWave(new Wave
+{
+    Entries = new List<SpawnEntry>
+    {
+        new() { Type = EnemyType.Walker, Count = 6, DelayBetween = 0.8f },
+        new() { Type = EnemyType.Runner, Count = 4, DelayBetween = 0.5f },
+    },
+    WaitForClear   = true,
+    DelayAfterWave = 5f
+});
 
-        _enemySpawner.AddWave(new Wave
-        {
-            Entries = new List<SpawnEntry>
-            {
-                new() { Type = EnemyType.Tank,    Count = 1, DelayBetween = 0f   },
-                new() { Type = EnemyType.Shooter, Count = 2, DelayBetween = 1f   },
-                new() { Type = EnemyType.Runner,  Count = 5, DelayBetween = 0.3f },
-            },
-            DelayAfterWave = 10f
-        });
+// Волна 3 — добавляем стрелка
+_enemySpawner.AddWave(new Wave
+{
+    Entries = new List<SpawnEntry>
+    {
+        new() { Type = EnemyType.Walker,  Count = 8,  DelayBetween = 0.6f },
+        new() { Type = EnemyType.Runner,  Count = 5,  DelayBetween = 0.4f },
+        new() { Type = EnemyType.Shooter, Count = 2,  DelayBetween = 1.0f },
+    },
+    WaitForClear   = true,
+    DelayAfterWave = 5f
+});
 
-        _enemySpawner.Start();
+// Волна 4 — всё вместе
+_enemySpawner.AddWave(new Wave
+{
+    Entries = new List<SpawnEntry>
+    {
+        new() { Type = EnemyType.Walker,  Count = 10, DelayBetween = 0.5f },
+        new() { Type = EnemyType.Runner,  Count = 8,  DelayBetween = 0.3f },
+        new() { Type = EnemyType.Shooter, Count = 3,  DelayBetween = 0.8f },
+    },
+    WaitForClear   = true,
+    DelayAfterWave = 8f
+});
+
+// Волна 5 — БОСС
+_enemySpawner.AddWave(new Wave
+{
+    Entries        = new List<SpawnEntry>(),
+    WaitForClear   = false,
+    DelayAfterWave = 0f,
+    IsBossWave     = true
+});
+
+_enemySpawner.OnBossWave += SpawnBoss;
+_enemySpawner.Start();
     }
 
     // ── Update ────────────────────────────────────────────────────────────
@@ -301,6 +331,7 @@ public class GameScene : Scene
         // ── Enemies ──
         var player = _controller.Player;
 
+        _enemySpawner.Zone.Position = _controller.Player.Position;
         _enemySpawner.Update(gameTime, player.Position,
         new Vector2(HQ.GraphicsDevice.Viewport.Width,
                     HQ.GraphicsDevice.Viewport.Height),
