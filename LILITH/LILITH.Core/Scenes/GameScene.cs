@@ -116,6 +116,9 @@ public class GameScene : Scene
         // ── Enemies ──
         _agentRegion = MakeSolidRegion(8, 8, Color.White);
         var projectileRegion = MakeSolidRegion(6, 3, Color.Yellow);
+        var skeletonAtlas = TextureAtlas.FromFile(Content, "skeleton.xml");
+        var patricktlas   = TextureAtlas.FromFile(Content, "patrick.xml");
+        var orcAtlas      = TextureAtlas.FromFile(Content, "orc.xml");
 
         _agentConfig = new AgentConfig
         {
@@ -144,26 +147,29 @@ public class GameScene : Scene
 
         _enemySpawner.RegisterFactory(EnemyType.Walker, pos =>
         {
-            var s = MakeAnimSprite(MakeSolidRegion(16, 16, Color.Green));
+            var s = skeletonAtlas.CreateAnimatedSprite("walk");
+            s.CenterOrigin();
             return new Enemies.Walker.Walker(s, pos);
         });
 
         _enemySpawner.RegisterFactory(EnemyType.Runner, pos =>
         {
-            var s = MakeAnimSprite(MakeSolidRegion(12, 12, Color.Cyan));
+            var s = skeletonAtlas.CreateAnimatedSprite("walk");
+            s.CenterOrigin();
             return new Enemies.Runner.Runner(s, pos);
         });
 
         _enemySpawner.RegisterFactory(EnemyType.Shooter, pos =>
         {
-            var s       = MakeAnimSprite(MakeSolidRegion(16, 16, Color.Orange));
+            var s       = patricktlas.CreateAnimatedSprite("walk");
+            s.CenterOrigin();
             var shooter = new Enemies.Shooter.Shooter(s, pos)
             {
                 ProjectileFactory = (pPos, dir) => new MainEngine.Projectile.Projectile
                 {
                     Position  = pPos,
                     Direction = dir,
-                    Region    = projectileRegion,
+                    Region    = MakeSolidRegion(6, 3, Color.Yellow),
                     Speed     = 200f,
                     LifeTime  = 3f
                 }
@@ -173,7 +179,8 @@ public class GameScene : Scene
 
         _enemySpawner.RegisterFactory(EnemyType.Tank, pos =>
         {
-            var s = MakeAnimSprite(MakeSolidRegion(32, 32, Color.Red));
+            var s = orcAtlas.CreateAnimatedSprite("walk");
+            s.CenterOrigin();
             return new Enemies.Tank.Tank(s, pos)
             {
                 AgentSpawnIntervalSeconds = 2f,

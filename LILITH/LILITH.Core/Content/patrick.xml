@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Atlas>
+  <Texture>patrick</Texture>
+  <Regions>
+    <Region name="walk_0" x="0"   y="0" width="64" height="64" />
+    <Region name="walk_1" x="64"  y="0" width="64" height="64" />
+    <Region name="walk_2" x="128" y="0" width="64" height="64" />
+    <Region name="walk_3" x="192" y="0" width="64" height="64" />
+  </Regions>
+  <Animations>
+    <Animation name="walk" delay="150">
+      <Frame region="walk_0" />
+      <Frame region="walk_1" />
+      <Frame region="walk_2" />
+      <Frame region="walk_3" />
+    </Animation>
+  </Animations>
+</Atlas>

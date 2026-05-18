@@ -30,6 +30,15 @@
     <Content Include="Content\player.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Content\orc.xml">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\patrick.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\skeleton.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
 </ItemGroup>
   <ItemGroup>
   <ProjectReference Include="..\..\MainEngine\MainEngine.csproj" />
