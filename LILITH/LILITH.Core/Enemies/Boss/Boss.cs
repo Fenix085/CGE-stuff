@@ -38,6 +38,7 @@ public class Boss : Enemy
 
     public void Update(GameTime gameTime, Vector2 playerPosition, Circle playerBounds, bool playerIsDead)
     {
+        base.Update(gameTime);
         Sprite.Update(gameTime);
         _fsm.Update(playerPosition, playerBounds, playerIsDead, gameTime);
     }

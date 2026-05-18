@@ -1081,6 +1081,7 @@ _enemySpawner.Start();
     private void DamagePlayer(int amount, float strenght = 1f, int ms = 1500)
     {
         _controller.Player.Health.TakeDamage(amount);
+        _controller.Player.TriggerHitFlash();
         HQ.Input.GamePads[0].SetVibration(strenght, TimeSpan.FromMicroseconds(ms));
     }
 

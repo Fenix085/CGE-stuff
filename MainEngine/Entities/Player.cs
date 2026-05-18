@@ -19,8 +19,10 @@ public class Player : Sprite
 
     private SoundEffect? _footstepSound;
     private SoundEffectInstance? _footstepInstance;
+    private float _hitFlashTimer = 0f;
+    private const float HIT_FLASH_DURATION = 0.12f;
 
-    // ── Система опыта ─────────────────────────────────────────────────────
+    // ── Exp system ─────────────────────────────────────────────────────
 
     public int Level      { get; private set; } = 1;
     public int CurrentXp  { get; private set; } = 0;
@@ -30,9 +32,9 @@ public class Player : Sprite
 
     private const float XP_SCALE = 1.4f;
 
-    // ── Конструкторы ──────────────────────────────────────────────────────
+    // ── Constructors ──────────────────────────────────────────────────────
 
-    /// <summary>Конструктор с реальным спрайтом.</summary>
+    // Constructor for when we have a proper sprite.
     public Player(AnimatedSprite sprite, Vector2 position, int hp)
     {
         Sprite   = sprite;
@@ -40,7 +42,7 @@ public class Player : Sprite
         Health   = new Health(hp);
     }
 
-    /// <summary>Конструктор-заглушка: игрок = зелёный квадрат.</summary>
+    // Constructor for when we just want a colored rectangle (e.g. during prototyping).
     public Player(Vector2 position, int hp, Texture2D pixel)
     {
         Sprite   = null;
@@ -48,6 +50,7 @@ public class Player : Sprite
         Health   = new Health(hp);
         _pixel   = pixel;
     }
+    
 
     public Vector2 LastMoveDirection { get; private set; } = Vector2.UnitX;
 
@@ -55,7 +58,12 @@ public class Player : Sprite
 
     public override void Update(GameTime gameTime)
     {
-        Move((float)gameTime.ElapsedGameTime.TotalSeconds);
+        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        if (_hitFlashTimer > 0f)
+            _hitFlashTimer -= dt;
+
+        Move(dt);
     }
 
     public void Move(float timeStep)
@@ -139,8 +147,12 @@ private void UpdateFootsteps(bool isMoving)
             _footstepInstance.Pause();
     }
 }
+    public void TriggerHitFlash()
+    {
+        _hitFlashTimer = HIT_FLASH_DURATION;
+    }
 
-    // ── Опыт ──────────────────────────────────────────────────────────────
+    // ── Exp system ─────────────────────────────────────────────────────
 
     public bool AddExperience(int amount)
     {
@@ -157,7 +169,7 @@ private void UpdateFootsteps(bool isMoving)
         return false;
     }
 
-    // ── Геометрия ─────────────────────────────────────────────────────────
+    // ── Geometry ─────────────────────────────────────────────────────────
 
     public Vector2 Center =>
     Sprite != null
@@ -190,6 +202,11 @@ private void UpdateFootsteps(bool isMoving)
                 Sprite.Effects = SpriteEffects.FlipHorizontally;
             else if (LastMoveDirection.X > 0)
                 Sprite.Effects = SpriteEffects.None;
+
+            
+            Sprite.Color = _hitFlashTimer > 0f
+                ? Color.Red
+                : Color.White;
 
             Sprite.Position = Position;
             Sprite.Draw(gameTime, spriteBatch);
