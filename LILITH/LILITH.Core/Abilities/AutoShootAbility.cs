@@ -13,10 +13,10 @@ public class AutoShootAbility : IAbility
 
     // ── Parameters ─────────────────────────────────────────────────────────
 
-    public int    Damage            { get; private set; } = 8;
+    public int    Damage            { get; private set; } = 2;
     private float _fireInterval     = 1.0f;
     private float _projectileSpeed  = 350f;
-    private float _projectileLife   = 3.0f;
+    private float _projectileLife   = 2.0f;
     private float _fireCooldown     = 0f;
 
     private readonly List<AutoProjectile> _projectiles = new();
@@ -25,7 +25,7 @@ public class AutoShootAbility : IAbility
 
     public void Upgrade()
     {
-        Damage          += 4;
+        Damage          += 2;
         _fireInterval    = MathF.Max(0.3f, _fireInterval - 0.15f);
         _projectileSpeed += 20f;
     }

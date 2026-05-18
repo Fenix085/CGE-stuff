@@ -37,7 +37,7 @@ namespace LILITH.Core.Enemies.Shooter
         private float _shootTimer;
 
         public Shooter(AnimatedSprite sprite, Vector2 position)
-            : base(sprite, position, hp: 3)
+            : base(sprite, position, hp: 20)
         {
             DetectionRadius = 450f;
             FollowRadius = 300f;

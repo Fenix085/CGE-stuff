@@ -19,7 +19,7 @@ namespace LILITH.Core.Enemies.Walker
         public NavigationFollower NavFollower { get; set; }
 
         public Walker(AnimatedSprite sprite, Vector2 position)
-            : base(sprite, position, hp: 5)
+            : base(sprite, position, hp: 10)
         {
             DetectionRadius = 400f;
             FollowRadius = 200f;

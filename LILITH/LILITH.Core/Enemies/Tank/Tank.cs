@@ -43,7 +43,7 @@ namespace LILITH.Core.Enemies.Tank
         private float _agentSpawnTimer;
 
         public Tank(AnimatedSprite sprite, Vector2 position)
-            : base(sprite, position, hp: 200)
+            : base(sprite, position, hp: 50)
         {
             CurrentSpeed = 0f;
             _fsm = new TankFSM(this);

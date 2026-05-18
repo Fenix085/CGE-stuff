@@ -10,7 +10,7 @@ public class AuraAbility : IAbility
 {
     public string Name        => "Aura";
     public string Description => "Produce an aura around\nthe player. Damages enemies\n on contact.";
-    public int Damage { get; private set; } = 10;
+    public int Damage { get; private set; } = 1;
 
     private float _radius;
     private float _pulseTimer;

@@ -10,7 +10,7 @@ public class TrailAbility : IAbility
 {
     public string Name        => "Trail";
     public string Description => "Left a trail while\nmoving. Damages enemies on contact.";
-    public int Damage { get; private set; } = 5;
+    public int Damage { get; private set; } = 1;
 
     // ── Параметры ─────────────────────────────────────────────────────────
 

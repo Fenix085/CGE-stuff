@@ -27,10 +27,10 @@ public class Enemy : Sprite
     }
 
     public Circle Bounds => new Circle(
-        (int)(Position.X + Sprite.Width * 0.1f),
-        (int)(Position.Y + Sprite.Height * 0.1f),
-        (int)(Sprite.Width * 0.1f)
-    );
+    (int)Position.X,
+    (int)Position.Y,
+    (int)(Sprite.Width * 0.4f)
+);
 
     #region Moving
 

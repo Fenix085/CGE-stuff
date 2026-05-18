@@ -19,10 +19,10 @@ namespace LILITH.Core.Enemies.Runner
         public NavigationFollower NavFollower { get; set; }
 
         public Runner(AnimatedSprite sprite, Vector2 position)
-            : base(sprite, position, hp: 2)
+            : base(sprite, position, hp: 5)
         {
             DetectionRadius = 500f;
-            FollowRadius = 250f;
+            FollowRadius = 500f;
             CurrentSpeed = 0f;
             _fsm = new RunnerFSM(this);
         }

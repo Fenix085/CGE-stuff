@@ -84,6 +84,9 @@ public class GameScene : Scene
         var walk   = atlas.CreateAnimatedSprite("walk");
         var death  = atlas.CreateAnimatedSprite("death");
 
+        idle.CenterOrigin();
+        walk.CenterOrigin();
+        death.CenterOrigin();
         var player = new Player(idle, new Vector2(400, 300), hp: 50);
         _controller = new PlayerController(player, _pixel, idle, walk, death);
         _controller.AddAbility(new AutoShootAbility());
@@ -200,8 +203,8 @@ public class GameScene : Scene
         {
             Entries = new List<SpawnEntry>
             {
-                new() { Type = EnemyType.Walker, Count = 3, DelayBetween = 0.8f },
-                new() { Type = EnemyType.Runner, Count = 2, DelayBetween = 0.4f },
+                new() { Type = EnemyType.Walker, Count = 10, DelayBetween = 0.8f },
+                new() { Type = EnemyType.Runner, Count = 10, DelayBetween = 0.4f },
             },
             DelayAfterWave = 6f
         });
@@ -564,7 +567,7 @@ public class GameScene : Scene
         bossSprite.Scale = new Vector2(2f);
 
         Vector2 spawnPos = _controller.Player.Position + new Vector2(400f, 0f);
-        _boss        = new Boss(bossSprite, spawnPos, hp: 20);
+        _boss        = new Boss(bossSprite, spawnPos, hp: 100);
         _bossSpawned = true;
     }
 

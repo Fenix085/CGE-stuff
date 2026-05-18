@@ -11,7 +11,7 @@ public class Player : Sprite
 {
     public AnimatedSprite? Sprite { get; set; }
     public Health Health;
-    public const float MOVEMENT_SPEED = 5f;
+    public const float MOVEMENT_SPEED = 3f;
 
     private readonly Texture2D? _pixel;
     private const int DEBUG_SIZE = 32;
@@ -134,17 +134,17 @@ private void HandleGamepad()
     // ── Геометрия ─────────────────────────────────────────────────────────
 
     public Vector2 Center =>
-        Sprite != null
-            ? new Vector2(Position.X + Sprite.Width  * 0.5f, Position.Y + Sprite.Height * 0.5f)
-            : new Vector2(Position.X + DEBUG_SIZE * 0.5f,    Position.Y + DEBUG_SIZE * 0.5f);
+    Sprite != null
+        ? Position
+        : new Vector2(Position.X + DEBUG_SIZE * 0.5f, Position.Y + DEBUG_SIZE * 0.5f);
 
     public Circle GetBounds()
     {
         if (Sprite != null)
             return new Circle(
-                (int)(Position.X + Sprite.Width  * 0.1f),
-                (int)(Position.Y + Sprite.Height * 0.1f),
-                (int)(Sprite.Width * 0.1f));
+                (int)Position.X,
+                (int)Position.Y,
+                (int)(Sprite.Width * 0.3f));
 
         return new Circle(
             (int)(Position.X + DEBUG_SIZE * 0.5f),
@@ -165,7 +165,6 @@ private void HandleGamepad()
             return;
         }
 
-        // Заглушка — зелёный квадрат
         if (_pixel != null)
         {
             spriteBatch.Draw(

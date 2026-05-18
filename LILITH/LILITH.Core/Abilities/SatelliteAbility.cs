@@ -33,7 +33,7 @@ public class SatelliteAbility : IAbility
         _orbitRadius        = 60f;
         _orbitSpeed         = 2.0f;
         _fireInterval       = 1.2f;
-        _projectileDamage   = 15;
+        _projectileDamage   = 5;
         _projectileSpeed    = 420f;
         _projectileLifetime = 2.0f;
         _fireCooldown       = 0f;
@@ -42,7 +42,7 @@ public class SatelliteAbility : IAbility
     public void Upgrade()
     {
         _satelliteCount++;
-        _projectileDamage += 5;
+        _projectileDamage += 2;
         _fireInterval      = MathF.Max(0.4f, _fireInterval - 0.1f);
     }
 

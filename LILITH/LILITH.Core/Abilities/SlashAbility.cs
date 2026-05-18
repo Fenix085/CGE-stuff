@@ -10,7 +10,7 @@ public class SlashAbility : IAbility
 {
     public string Name        => "Slash";
     public string Description => "Auto sword slash\n in the direction of movement.";
-    public int Damage { get; private set; } = 25;
+    public int Damage { get; private set; } = 10;
 
     // ── Параметры ─────────────────────────────────────────────────────────
 
