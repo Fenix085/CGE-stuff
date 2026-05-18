@@ -13,6 +13,7 @@ public class LevelSelectScene : Scene
     private SpriteFont? _font;
 
     private Button _btnLevel1 = null!;
+    private Button _btnLevel2 = null!;
     private Button _btnBack   = null!;
 
     private KeyboardState _prevKeys;
@@ -34,16 +35,21 @@ public class LevelSelectScene : Scene
         int bw  = 220;
         int bh  = 55;
 
-        _btnLevel1 = new Button(new Rectangle(cx - bw / 2, cy - bh / 2, bw, bh), "LEVEL 1");
-        _btnBack   = new Button(new Rectangle(cx - bw / 2, cy + bh + 20, bw, 45), "BACK");
-
+        _btnLevel1 = new Button(new Rectangle(cx - bw / 2, cy - bh - 10,      bw, bh), "WAVES CLEAR");
+        _btnLevel2 = new Button(new Rectangle(cx - bw / 2, cy,                 bw, bh), "ENDLESS");
+        _btnBack   = new Button(new Rectangle(cx - bw / 2, cy + bh + 10,       bw, 45), "BACK");
+        
         _btnLevel1.OnClick += () => HQ.ChangeScene(new GameScene());
         _btnBack.OnClick   += () => HQ.ChangeScene(new MainMenuScene());
+        _btnLevel2.OnClick += () => HQ.ChangeScene(new EndlessScene());     
+        
+        
     }
 
     public override void Update(GameTime gameTime)
     {
         _btnLevel1.Update(gameTime);
+        _btnLevel2.Update(gameTime);
         _btnBack.Update(gameTime);
 
         // ESC back to menu
@@ -75,6 +81,7 @@ public class LevelSelectScene : Scene
         }
 
         _btnLevel1.Draw(HQ.SpriteBatch, _pixel, _font);
+        _btnLevel2.Draw(HQ.SpriteBatch, _pixel, _font);
         _btnBack.Draw(HQ.SpriteBatch, _pixel, _font);
 
         HQ.SpriteBatch.End();
