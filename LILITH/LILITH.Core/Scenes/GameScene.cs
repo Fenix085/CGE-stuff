@@ -478,7 +478,7 @@ _enemySpawner.Start();
         {
             _victoryTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            if (_victoryTimer >= 5f && !_victoryScreen.IsVisible)
+            if (_victoryTimer >= 3f && !_victoryScreen.IsVisible)
                 _victoryScreen.Show(HQ.GraphicsDevice.Viewport, _font);
 
             _victoryScreen.Update(gameTime, HQ.GraphicsDevice.Viewport);

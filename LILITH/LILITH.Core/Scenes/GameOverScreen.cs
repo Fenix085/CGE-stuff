@@ -160,7 +160,7 @@ public class GameOverScreen
 
         // ── Subtitle ───────────────────────────────────────
 
-        string sub = "The bananas consumed your soul";
+        string sub = "They consumed your soul... (and body)";
 
         Vector2 subSize = _font.MeasureString(sub);
 
