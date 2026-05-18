@@ -5,6 +5,9 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using Microsoft.Xna.Framework.Audio;
+using LILITH.Audio;
+using Microsoft.Xna.Framework.Media;
 
 namespace LILITH.Core.Scenes;
 
@@ -16,10 +19,13 @@ public class LevelSelectScene : Scene
     private Button _btnLevel1 = null!;
     private Button _btnLevel2 = null!;
     private Button _btnBack   = null!;
+    private bool _pendingSceneChange;
+    private float _sceneChangeTimer;
+    private Action? _nextAction;
 
     private KeyboardState _prevKeys;
 
-    // Звёзды
+    // Stars
     private (Vector2 pos, float size, float brightness)[] _stars = Array.Empty<(Vector2, float, float)>();
     private float _time;
 
@@ -36,6 +42,9 @@ public class LevelSelectScene : Scene
 
         _font = Content.Load<SpriteFont>("DefaultFont");
 
+        AudioAssets.ButtonClick =
+        Content.Load<SoundEffect>("audio/buttons");
+        
         var vp = HQ.GraphicsDevice.Viewport;
         int vw = vp.Width;
         int vh = vp.Height;
@@ -70,11 +79,61 @@ public class LevelSelectScene : Scene
             ColorShadow  = new Color(0,   0,   0,   0),
         };
 
-        _btnLevel1.OnClick += () => HQ.ChangeScene(new GameScene());
-        _btnLevel2.OnClick += () => HQ.ChangeScene(new EndlessScene());
-        _btnBack.OnClick   += () => HQ.ChangeScene(new MainMenuScene());
+        _btnLevel1.OnClick += () =>
+        {
+            HQ.Audio.PlaySoundEffect(
+                AudioAssets.ButtonClick,
+                0.45f,
+                0f,
+                0f,
+                false);
 
-        // Звёзды
+            _pendingSceneChange = true;
+            _sceneChangeTimer = 0.12f;
+
+            _nextAction = () =>
+            {
+                HQ.ChangeScene(new GameScene());
+            };
+        };
+
+        _btnLevel2.OnClick += () =>
+        {
+            HQ.Audio.PlaySoundEffect(
+                AudioAssets.ButtonClick,
+                0.45f,
+                0f,
+                0f,
+                false);
+
+            _pendingSceneChange = true;
+            _sceneChangeTimer = 0.12f;
+
+            _nextAction = () =>
+            {
+                HQ.ChangeScene(new EndlessScene());
+            };
+        };
+
+        _btnBack.OnClick += () =>
+        {
+            HQ.Audio.PlaySoundEffect(
+                AudioAssets.ButtonClick,
+                0.45f,
+                0f,
+                0f,
+                false);
+
+            _pendingSceneChange = true;
+            _sceneChangeTimer = 0.12f;
+
+            _nextAction = () =>
+            {
+                HQ.ChangeScene(new MainMenuScene());
+            };
+        };
+
+        // Stars
         var rng = new Random(99);
         _stars = new (Vector2, float, float)[80];
         for (int i = 0; i < _stars.Length; i++)
@@ -94,7 +153,19 @@ public class LevelSelectScene : Scene
         _btnLevel1.Update(gameTime);
         _btnLevel2.Update(gameTime);
         _btnBack.Update(gameTime);
+        
+        if (_pendingSceneChange)
+        {
+            _sceneChangeTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+            if (_sceneChangeTimer <= 0f)
+            {
+                _pendingSceneChange = false;
+                _nextAction?.Invoke();
+                _nextAction = null;
+            }
+        }
+        
         KeyboardState keys = Keyboard.GetState();
         if (keys.IsKeyDown(Keys.Escape) && _prevKeys.IsKeyUp(Keys.Escape))
             HQ.ChangeScene(new MainMenuScene());
@@ -115,7 +186,7 @@ public class LevelSelectScene : Scene
             blendState:   BlendState.AlphaBlend,
             samplerState: SamplerState.PointClamp);
 
-        // ── Градиент неба ─────────────────────────────────────────────────
+        // ── Gradient Sky ─────────────────────────────────────────────────
         int bands = 60;
         for (int i = 0; i < bands; i++)
         {
@@ -128,7 +199,7 @@ public class LevelSelectScene : Scene
             HQ.SpriteBatch.Draw(_pixel, new Rectangle(0, bY, vw, bH), new Color(r, g, b));
         }
 
-        // ── Звёзды ────────────────────────────────────────────────────────
+        // ── Stars ────────────────────────────────────────────────────────
         foreach (var (pos, size, brightness) in _stars)
         {
             float twinkle = brightness * (0.7f + 0.3f * MathF.Sin(_time * 1.5f + pos.X));
@@ -138,7 +209,7 @@ public class LevelSelectScene : Scene
                 new Color(232, 213, 240) * twinkle);
         }
 
-        // ── Облака ────────────────────────────────────────────────────────
+        // ── Clouds ────────────────────────────────────────────────────────
         Color cloud = new Color(30, 18, 50);
         DrawFogEllipse(cx, (int)(vh * 0.12f), 120, 18, cloud * 0.5f);
         DrawFogEllipse((int)(vw * 0.18f), (int)(vh * 0.10f), 80, 12, cloud * 0.4f);
@@ -146,7 +217,7 @@ public class LevelSelectScene : Scene
         DrawFogEllipse((int)(vw * 0.08f), (int)(vh * 0.22f), 90, 14, cloud * 0.35f);
         DrawFogEllipse((int)(vw * 0.90f), (int)(vh * 0.20f), 100, 15, cloud * 0.35f);
 
-        // ── Дальние холмы ─────────────────────────────────────────────────
+        // ── Far Hills ─────────────────────────────────────────────────
         int   horizon = (int)(vh * 0.62f);
         Color far     = new Color(18, 10, 32);
         DrawFilledTriangle(new Vector2(vw * 0.05f, horizon), new Vector2(vw * 0.22f, horizon - 80), new Vector2(vw * 0.38f, horizon), far);
@@ -154,7 +225,7 @@ public class LevelSelectScene : Scene
         DrawFilledTriangle(new Vector2(vw * 0.62f, horizon), new Vector2(vw * 0.78f, horizon - 70), new Vector2(vw * 0.95f, horizon), far);
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(0, horizon, vw, vh - horizon), far);
 
-        // ── Горы ──────────────────────────────────────────────────────────
+        // ── Mountains ─────────────────────────────────────────────────
         Color mtn      = new Color(8, 5, 14);
         int   mtnLine  = (int)(vh * 0.68f);
         DrawFilledTriangle(new Vector2(0,          mtnLine), new Vector2(0,          vh),           new Vector2(vw * 0.28f, vh),       mtn);
@@ -165,7 +236,7 @@ public class LevelSelectScene : Scene
         DrawFilledTriangle(new Vector2(vw * 0.85f, mtnLine - 70), new Vector2(vw * 0.72f, mtnLine), new Vector2(vw * 0.58f, mtnLine),  mtn);
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(0, mtnLine, vw, vh - mtnLine + 2), mtn);
 
-        // ── Замок ─────────────────────────────────────────────────────────
+        // ── Castle ─────────────────────────────────────────────────────────
         Color cc  = new Color(9, 6, 18);
         int   bx  = (int)(vw * 0.72f);
         int   by  = mtnLine - 100;
@@ -177,11 +248,11 @@ public class LevelSelectScene : Scene
         DrawRect(bx + 32, by - 33, 3, 10, cc); DrawRect(bx + 37, by - 33, 3, 10, cc);
         DrawRect(bx - 5,  by + 15, 52, vh - by, cc);
 
-        // ── Колонны ───────────────────────────────────────────────────────
+        // ── Columns ───────────────────────────────────────────────────────
         DrawColumn(70,       195, vh);
         DrawColumn(vw - 98,  195, vh);
 
-        // ── Туман ─────────────────────────────────────────────────────────
+        // ── Fog ─────────────────────────────────────────────────────────
         for (int i = 0; i < 5; i++)
         {
             float fy    = vh * 0.82f + i * 18;
@@ -193,11 +264,11 @@ public class LevelSelectScene : Scene
         DrawFogEllipse(cx - 250, (int)(vh * 0.88f), 300, 45, new Color(25, 12, 40) * 0.35f);
         DrawFogEllipse(cx + 100, (int)(vh * 0.85f), 260, 38, new Color(25, 12, 40) * 0.28f);
 
-        // ── Растения ──────────────────────────────────────────────────────
+        // ── Plants ──────────────────────────────────────────────────────
         DrawPlants(30,       vh);
         DrawPlants(vw - 30,  vh, mirror: true);
 
-        // ── Заголовок SELECT LEVEL ────────────────────────────────────────
+        // ── Header SELECT LEVEL ────────────────────────────────────────
         if (_font != null)
         {
             string  title = "SELECT LEVEL";
@@ -210,14 +281,14 @@ public class LevelSelectScene : Scene
             HQ.SpriteBatch.DrawString(_font, title, pos, new Color(212, 184, 224),
                 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
 
-            // Декоративная линия под заголовком
+            // Decorative line under the header
             int lineW = (int)(size.X * scale + 40);
             HQ.SpriteBatch.Draw(_pixel,
                 new Rectangle((int)((vw - lineW) * 0.5f), (int)(vh * 0.10f + size.Y * scale + 6), lineW, 1),
                 new Color(122, 85, 144, 160));
         }
 
-        // ── Кнопки ────────────────────────────────────────────────────────
+        // ── Buttons ────────────────────────────────────────────────────────
         DrawGothicButton(_btnLevel1);
         DrawGothicButton(_btnLevel2);
         DrawGothicButton(_btnBack);
@@ -225,7 +296,7 @@ public class LevelSelectScene : Scene
         HQ.SpriteBatch.End();
     }
 
-    // ── Кнопка в готическом стиле ─────────────────────────────────────────
+    // ── Gothic Button ─────────────────────────────────────────────────
 
     private void DrawGothicButton(Button btn)
     {
@@ -251,7 +322,7 @@ public class LevelSelectScene : Scene
         }
     }
 
-    // ── Геометрия ─────────────────────────────────────────────────────────
+    // ── Geometry ─────────────────────────────────────────────────────────
 
     private void DrawRect(int x, int y, int w, int h, Color color) =>
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(x, y, w, h), color);

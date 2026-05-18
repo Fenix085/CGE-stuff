@@ -15,6 +15,9 @@ using MainEngine.Scenes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Media;
+using LILITH.Audio;
 
 namespace LILITH.Core.Scenes;
 
@@ -38,6 +41,7 @@ public class EndlessScene : Scene
     private bool              _isPaused;
     private bool              _isGameOver;
     private float             _deathTimer;
+    private bool _pauseKeyReleased = true;
 
     private const int  CARD_COUNT    = 3;
     private IAbility[] _currentCards = Array.Empty<IAbility>();
@@ -60,9 +64,9 @@ public class EndlessScene : Scene
 
     // ── Difficulty ────────────────────────────────────────────────────────
 
-    private float _elapsed          = 0f;  // общее время игры
-    private float _difficultyTimer  = 0f;  // таймер нарастания сложности
-    private const float DIFFICULTY_INTERVAL = 30f; // каждые 30 сек растёт сложность
+    private float _elapsed          = 0f;
+    private float _difficultyTimer  = 0f; 
+    private const float DIFFICULTY_INTERVAL = 30f;
     private int   _difficultyLevel  = 0;
 
     // ── Boss ──────────────────────────────────────────────────────────────
@@ -70,7 +74,7 @@ public class EndlessScene : Scene
     private Boss  _boss            = null!;
     private bool  _bossAlive       = false;
     private float _bossTimer       = 0f;
-    private const float BOSS_INTERVAL = 120f; // каждые 2 минуты
+    private const float BOSS_INTERVAL = 120f;
 
     // ── Initialization ────────────────────────────────────────────────────
 
@@ -86,6 +90,15 @@ public class EndlessScene : Scene
         _pixel.SetData(new[] { Color.White });
         _font  = Content.Load<SpriteFont>("DefaultFont");
 
+        AudioAssets.PauseOpen =
+        Content.Load<SoundEffect>("audio/pause_in");
+
+        AudioAssets.PauseClose =
+        Content.Load<SoundEffect>("audio/pause_out");
+
+        AudioAssets.Footsteps =
+        Content.Load<SoundEffect>("audio/bananas_movement");
+
         // ── Player ──
         var atlas = TextureAtlas.FromFile(Content, "player.xml");
         var idle  = atlas.CreateAnimatedSprite("idle");
@@ -96,6 +109,11 @@ public class EndlessScene : Scene
         var player  = new Player(idle, new Vector2(400, 300), hp: 50);
         _controller = new PlayerController(player, _pixel, idle, walk, death);
         _controller.AddAbility(new AutoShootAbility());
+
+        AudioAssets.Footsteps =
+        Content.Load<SoundEffect>("audio/bananas_movement");
+
+        player.SetFootstepSound(AudioAssets.Footsteps);
 
         // ── Camera ──
         _camera     = new Camera();
@@ -111,13 +129,37 @@ public class EndlessScene : Scene
         _levelUp.OnCardChosen += HandleCardChosen;
         _xpSpawner.SpawnInitial(player.Center, HQ.GraphicsDevice.Viewport);
 
-        // ── Pause buttons ──
+        // ── Pause menu buttons ──
         int cx = HQ.GraphicsDevice.Viewport.Width  / 2;
         int cy = HQ.GraphicsDevice.Viewport.Height / 2;
-        _btnResume   = new Button(new Rectangle(cx - 110, cy - 65, 220, 50), "RESUME");
-        _btnMainMenu = new Button(new Rectangle(cx - 110, cy + 15,  220, 50), "MAIN MENU");
-        _btnResume.OnClick   += () => _isPauseMenu = false;
-        _btnMainMenu.OnClick += () => HQ.ChangeScene(new MainMenuScene());
+
+        _btnResume   = new Button(new Rectangle(cx - 130, cy - 65, 260, 52), "RESUME")
+        {
+            ColorNormal  = new Color(26,  13,  40,  230),
+            ColorHover   = new Color(50,  25,  70,  240),
+            ColorPressed = new Color(15,  8,   25,  255),
+            ColorText    = new Color(200, 168, 220),
+            ColorShadow  = new Color(0,   0,   0,   0),
+        };
+
+        _btnMainMenu = new Button(new Rectangle(cx - 130, cy + 3, 260, 52), "MAIN MENU")
+        {
+            ColorNormal  = new Color(26,  13,  40,  230),
+            ColorHover   = new Color(50,  25,  70,  240),
+            ColorPressed = new Color(15,  8,   25,  255),
+            ColorText    = new Color(200, 168, 220),
+            ColorShadow  = new Color(0,   0,   0,   0),
+        };
+        _btnResume.OnClick += () =>
+        {
+            HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
+            _isPauseMenu = false;
+        };
+        _btnMainMenu.OnClick += () =>
+        {
+            HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
+            HQ.ChangeScene(new MainMenuScene());
+        };
 
         // ── Enemies ──
         _agentRegion = MakeSolidRegion(8, 8, Color.White);
@@ -149,13 +191,13 @@ public class EndlessScene : Scene
 
         RegisterEnemyFactories();
 
-        // Начальные веса — только Walker
+        // Walker base weight
         _enemySpawner.AddWeight(EnemyType.Walker, 5f);
         _enemySpawner.Interval  = 2f;
         _enemySpawner.BatchSize = 1;
         _enemySpawner.MaxAlive  = 10;
 
-        // Таймер босса — первый через 2 минуты
+        // Boss spawn timer
         _bossTimer = BOSS_INTERVAL;
     }
 
@@ -164,13 +206,39 @@ public class EndlessScene : Scene
     public override void Update(GameTime gameTime)
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-        // Пауза
+        // Esc for pause
         KeyboardState keys = Keyboard.GetState();
-        if (keys.IsKeyDown(Keys.Escape) && _prevKeys.IsKeyUp(Keys.Escape) && !_isPaused)
-            _isPauseMenu = !_isPauseMenu;
-        _prevKeys = keys;
+        if (keys.IsKeyDown(Keys.Escape) && _pauseKeyReleased)
+        {
+            _pauseKeyReleased = false;
 
+            _isPauseMenu = !_isPauseMenu;
+
+            if (_isPauseMenu)
+            {
+                HQ.Audio.PlaySoundEffect(
+                    AudioAssets.PauseOpen,
+                    0.45f,
+                    0f,
+                    0f,
+                    false);
+            }
+            else
+            {
+                HQ.Audio.PlaySoundEffect(
+                    AudioAssets.PauseClose,
+                    0.45f,
+                    0f,
+                    0f,
+                    false);
+            }
+        }
+        if (keys.IsKeyUp(Keys.Escape))
+        {
+            _pauseKeyReleased = true;
+        }
+
+        // Pause menu has priority over game pause
         if (_isPauseMenu)
         {
             _btnResume.Update(gameTime);
@@ -194,19 +262,19 @@ public class EndlessScene : Scene
             return;
         }
 
-        // ── Геймплей ──
+        // ── Gameplay ──
         _elapsed         += dt;
         _difficultyTimer += dt;
         _bossTimer       -= dt;
 
-        // Нарастание сложности каждые 30 секунд
+        // Increase difficulty every 30 seconds
         if (_difficultyTimer >= DIFFICULTY_INTERVAL)
         {
             _difficultyTimer = 0f;
             RampDifficulty();
         }
 
-        // Спавн босса каждые 2 минуты
+        // Boss spawn every 2 minutes
         if (_bossTimer <= 0f && !_bossAlive)
         {
             _bossTimer = BOSS_INTERVAL;
@@ -228,7 +296,7 @@ public class EndlessScene : Scene
 
         _camera.Pos = Vector2.Lerp(_camera.Pos, _controller.Player.Center, CAMERA_LERP);
 
-        // Обновляем зону спавна под игрока
+        // Update spawners and enemies
         _enemySpawner.Zone.Position = _controller.Player.Position;
 
         _xpSpawner.Update(gameTime, _camera.Pos, HQ.GraphicsDevice.Viewport);
@@ -247,7 +315,7 @@ public class EndlessScene : Scene
         _enemySpawner.UpdateTanks(gameTime, player.Position,
             player.Health.IsDead, _agentConfig, _forceSources);
 
-        // Босс
+        // Boss
         if (_bossAlive && !_boss.IsDead)
         {
             _boss.Update(gameTime, player.Position,
@@ -293,20 +361,20 @@ public class EndlessScene : Scene
 
         switch (_difficultyLevel)
         {
-            case 1: // 30 сек — добавляем Runner
+            case 1: 
                 _enemySpawner.SetWeights(
                     new EnemyWeight(EnemyType.Walker, 5f),
                     new EnemyWeight(EnemyType.Runner, 2f));
                 _enemySpawner.MaxAlive  = 15;
                 break;
 
-            case 2: // 60 сек — быстрее спавн
+            case 2: 
                 _enemySpawner.Interval  = 1.5f;
                 _enemySpawner.BatchSize = 2;
                 _enemySpawner.MaxAlive  = 20;
                 break;
 
-            case 3: // 90 сек — добавляем Shooter
+            case 3: 
                 _enemySpawner.SetWeights(
                     new EnemyWeight(EnemyType.Walker,  4f),
                     new EnemyWeight(EnemyType.Runner,  3f),
@@ -314,7 +382,7 @@ public class EndlessScene : Scene
                 _enemySpawner.MaxAlive  = 25;
                 break;
 
-            case 4: // 120 сек — добавляем Tank
+            case 4: 
                 _enemySpawner.SetWeights(
                     new EnemyWeight(EnemyType.Walker,  4f),
                     new EnemyWeight(EnemyType.Runner,  3f),
@@ -324,7 +392,7 @@ public class EndlessScene : Scene
                 _enemySpawner.MaxAlive  = 30;
                 break;
 
-            default: // после 4-го уровня — просто уменьшаем интервал
+            default: 
                 _enemySpawner.Interval  = MathF.Max(0.4f, _enemySpawner.Interval - 0.1f);
                 _enemySpawner.MaxAlive  = Math.Min(50, _enemySpawner.MaxAlive + 5);
                 _enemySpawner.BatchSize = Math.Min(4, _enemySpawner.BatchSize + 1);
@@ -407,20 +475,21 @@ public class EndlessScene : Scene
     {
         var vp = HQ.GraphicsDevice.Viewport;
 
-        // Затемнение
+        // Screen darken
         HQ.SpriteBatch.Draw(_pixel,
             new Rectangle(0, 0, vp.Width, vp.Height),
             new Color(0, 0, 0, 160));
 
-        // Панель
+        // Menu panel
         int pw = 360, ph = 260;
         int px = (vp.Width  - pw) / 2;
         int py = (vp.Height - ph) / 2 - 20;
 
-        // Внешняя рамка готическая
+        // Gothic-style panel with double border and corner diamonds
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(px, py, pw, ph), new Color(122, 85, 144));
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + 1, py + 1, pw - 2, ph - 2), new Color(18, 10, 30, 245));
-        // Внутренняя рамка
+        
+        // Inner border
         const int B = 4;
         Color innerBorder = new Color(90, 53, 112);
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + B, py + B, pw - B * 2, 1), innerBorder);
@@ -428,13 +497,13 @@ public class EndlessScene : Scene
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + B, py + B, 1, ph - B * 2), innerBorder);
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + pw - B, py + B, 1, ph - B * 2), innerBorder);
 
-        // Угловые ромбики панели
+        // Corner diamonds
         DrawDiamond(px,      py,      4, new Color(147, 112, 168, 180));
         DrawDiamond(px + pw, py,      4, new Color(147, 112, 168, 180));
         DrawDiamond(px,      py + ph, 4, new Color(147, 112, 168, 180));
         DrawDiamond(px + pw, py + ph, 4, new Color(147, 112, 168, 180));
 
-        // Заголовок PAUSED
+        // Header PAUSED
         if (_font != null)
         {
             string  title = "PAUSED";
@@ -443,7 +512,7 @@ public class EndlessScene : Scene
             HQ.SpriteBatch.DrawString(_font, title, pos + new Vector2(2, 2), new Color(0, 0, 0) * 0.6f);
             HQ.SpriteBatch.DrawString(_font, title, pos, new Color(212, 184, 224));
 
-            // Линия под заголовком
+            // Line under header
             HQ.SpriteBatch.Draw(_pixel,
                new Rectangle(px + 20, (int)(py + 25 + size.Y + 4), pw - 40, 1),
                 new Color(122, 85, 144, 160));

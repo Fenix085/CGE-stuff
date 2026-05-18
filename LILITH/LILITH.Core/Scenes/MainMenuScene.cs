@@ -4,6 +4,9 @@ using MainEngine.Scenes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Media;
+using LILITH.Audio;
 
 namespace LILITH.Core.Scenes;
 
@@ -14,6 +17,9 @@ public class MainMenuScene : Scene
 
     private Button _btnPlay = null!;
     private Button _btnExit = null!;
+    private bool _pendingSceneChange;
+    private float _sceneChangeTimer;
+    private Action? _nextAction;
 
     private (Vector2 pos, float size, float brightness)[] _stars = Array.Empty<(Vector2, float, float)>();
     private float _time;
@@ -30,6 +36,9 @@ public class MainMenuScene : Scene
         _pixel.SetData(new[] { Color.White });
 
         _font = Content.Load<SpriteFont>("DefaultFont");
+
+        AudioAssets.ButtonClick =
+        Content.Load<SoundEffect>("audio/buttons");
 
         var vp = HQ.GraphicsDevice.Viewport;
         int vw = vp.Width;
@@ -59,8 +68,47 @@ public class MainMenuScene : Scene
             ColorShadow  = new Color(0,   0,   0,   0),
         };
 
-        _btnPlay.OnClick += () => HQ.ChangeScene(new LevelSelectScene());
-        _btnExit.OnClick += () => HQ.Instance.Exit();
+        _btnPlay.OnClick += () =>
+        {
+            if (_pendingSceneChange)
+                return;
+
+            HQ.Audio.PlaySoundEffect(
+                AudioAssets.ButtonClick,
+                0.45f,
+                0f,
+                0f,
+                false);
+
+            _pendingSceneChange = true;
+            _sceneChangeTimer = 0.12f;
+
+            _nextAction = () =>
+            {
+                HQ.ChangeScene(new LevelSelectScene());
+            };
+        };
+
+        _btnExit.OnClick += () =>
+        {
+            if (_pendingSceneChange)
+                return;
+
+            HQ.Audio.PlaySoundEffect(
+                AudioAssets.ButtonClick,
+                0.45f,
+                0f,
+                0f,
+                false);
+
+            _pendingSceneChange = true;
+            _sceneChangeTimer = 0.12f;
+
+            _nextAction = () =>
+            {
+                HQ.Instance.Exit();
+            };
+        };
 
         var rng = new Random(42);
         _stars = new (Vector2, float, float)[80];
@@ -79,6 +127,17 @@ public class MainMenuScene : Scene
         _time += (float)gameTime.ElapsedGameTime.TotalSeconds;
         _btnPlay.Update(gameTime);
         _btnExit.Update(gameTime);
+        if (_pendingSceneChange)
+        {
+            _sceneChangeTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (_sceneChangeTimer <= 0f)
+            {
+                _pendingSceneChange = false;
+                _nextAction?.Invoke();
+                _nextAction = null;
+            }
+        }
     }
 
     public override void Draw(GameTime gameTime)
@@ -95,7 +154,7 @@ public class MainMenuScene : Scene
             blendState:   BlendState.AlphaBlend,
             samplerState: SamplerState.PointClamp);
 
-        // ── Градиент неба — без зазоров ───────────────────────────────────
+        // ── Gradient ───────────────────────────────────
         int bands = 60;
         for (int i = 0; i < bands; i++)
         {
@@ -108,7 +167,7 @@ public class MainMenuScene : Scene
             HQ.SpriteBatch.Draw(_pixel, new Rectangle(0, bY, vw, bH), new Color(r, g, b));
         }
 
-        // ── Звёзды ────────────────────────────────────────────────────────
+        // ── Stars ────────────────────────────────────────────────────────
         foreach (var (pos, size, brightness) in _stars)
         {
             float twinkle = brightness * (0.7f + 0.3f * MathF.Sin(_time * 1.5f + pos.X));
@@ -118,38 +177,38 @@ public class MainMenuScene : Scene
                 new Color(232, 213, 240) * twinkle);
         }
 
-        // ── Луна ──────────────────────────────────────────────────────────
+        // ── Moon ──────────────────────────────────────────────────────────
         int moonCX = cx;
         int moonCY = (int)(vh * 0.32f);
         int moonR  = (int)(vh * 0.22f);
 
-        // Свечение
+        // Moon glow
         for (int ring = moonR + 60; ring > moonR; ring -= 8)
         {
             float alpha = (1f - (float)(ring - moonR) / 65f) * 0.06f;
             DrawFilledCircle(moonCX, moonCY, ring, new Color(80, 40, 110) * alpha);
         }
 
-        // Диск
+        // Draw moon body
         DrawFilledCircle(moonCX, moonCY, moonR, new Color(18, 10, 30));
         DrawCircleOutline(moonCX, moonCY, moonR, new Color(70, 38, 95), 2f);
         DrawFilledCircle(moonCX - moonR / 5, moonCY - moonR / 6, moonR / 4, new Color(14, 8, 24) * 0.5f);
         DrawFilledCircle(moonCX + moonR / 6, moonCY + moonR / 5, moonR / 6, new Color(14, 8, 24) * 0.4f);
 
-        // ── Детали заднего плана ──────────────────────────────────────────
+        // ── Background Details ──────────────────────────────────────────
         DrawBackgroundDetails(vw, vh, moonCX, moonCY, moonR);
 
-        // ── Горы ──────────────────────────────────────────────────────────
+        // ── Mountains ──────────────────────────────────────────────────────────
         DrawMountains(vw, vh, moonCX, moonCY, moonR);
 
-        // ── Замок ─────────────────────────────────────────────────────────
+        // ── Castle ─────────────────────────────────────────────────────────
         DrawCastle(vw, vh, moonCX, moonCY, moonR);
 
-        // ── Колонны ───────────────────────────────────────────────────────
+        // ── Columns ───────────────────────────────────────────────────────
         DrawColumn(70, 195, vh);
         DrawColumn(vw - 98, 195, vh);
 
-        // ── Туман ─────────────────────────────────────────────────────────
+        // ── Fog ─────────────────────────────────────────────────────────
         for (int i = 0; i < 5; i++)
         {
             float fy    = vh * 0.82f + i * 18;
@@ -161,13 +220,13 @@ public class MainMenuScene : Scene
         DrawFogEllipse(cx - 250, (int)(vh * 0.88f), 300, 45, new Color(25, 12, 40) * 0.35f);
         DrawFogEllipse(cx + 100, (int)(vh * 0.85f), 260, 38, new Color(25, 12, 40) * 0.28f);
 
-        // ── Растения ──────────────────────────────────────────────────────
+        // ── Plants ──────────────────────────────────────────────────────
         DrawPlants(30, vh);
         DrawPlants(vw - 30, vh, mirror: true);
 
        
 
-        // ── Заголовок LILITH ──────────────────────────────────────────────
+        // ── Header LILITH ──────────────────────────────────────────────
         if (_font != null)
         {
             string  title      = "BANANAS";
@@ -186,14 +245,14 @@ public class MainMenuScene : Scene
                 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
         }
 
-        // ── Кнопки ────────────────────────────────────────────────────────
+        // ── Buttons ────────────────────────────────────────────────────────
         DrawGothicButton(_btnPlay, vw);
         DrawGothicButton(_btnExit, vw);
 
         HQ.SpriteBatch.End();
     }
 
-    // ── Кнопка ───────────────────────────────────────────────────────────
+    // ── Button ───────────────────────────────────────────────────────────
 
     private void DrawGothicButton(Button btn, int vw)
     {
@@ -219,7 +278,7 @@ public class MainMenuScene : Scene
         }
     }
 
-    // ── Детали заднего плана ──────────────────────────────────────────────
+    // ── Background Details ──────────────────────────────────────────────
 
     private void DrawBackgroundDetails(int vw, int vh, int moonCX, int moonCY, int moonR)
     {
@@ -227,13 +286,13 @@ public class MainMenuScene : Scene
         Color far     = new Color(18, 10, 32);
         Color cloud   = new Color(30, 18, 50);
 
-        // Дальние холмы
+        // Hills
         DrawFilledTriangle(new Vector2(vw * 0.05f, horizon), new Vector2(vw * 0.22f, horizon - 80), new Vector2(vw * 0.38f, horizon), far);
         DrawFilledTriangle(new Vector2(vw * 0.35f, horizon), new Vector2(vw * 0.50f, horizon - 55), new Vector2(vw * 0.65f, horizon), far);
         DrawFilledTriangle(new Vector2(vw * 0.62f, horizon), new Vector2(vw * 0.78f, horizon - 70), new Vector2(vw * 0.95f, horizon), far);
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(0, horizon, vw, vh - horizon), far);
 
-        // Облака
+        // Clouds
         DrawFogEllipse((int)(vw * 0.18f), (int)(vh * 0.12f), 120, 18, cloud * 0.5f);
         DrawFogEllipse((int)(vw * 0.15f), (int)(vh * 0.10f), 80,  12, cloud * 0.4f);
         DrawFogEllipse((int)(vw * 0.78f), (int)(vh * 0.15f), 110, 16, cloud * 0.5f);
@@ -242,7 +301,7 @@ public class MainMenuScene : Scene
         DrawFogEllipse((int)(vw * 0.90f), (int)(vh * 0.20f), 100, 15, cloud * 0.35f);
     }
 
-    // ── Горы ─────────────────────────────────────────────────────────────
+    // ── Mountains ─────────────────────────────────────────────────────────────
 
     private void DrawMountains(int vw, int vh, int moonCX, int moonCY, int moonR)
     {
@@ -260,7 +319,7 @@ public class MainMenuScene : Scene
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(0, horizon, vw, vh - horizon + 2), mtn);
     }
 
-    // ── Замок ─────────────────────────────────────────────────────────────
+    // ── Castle ─────────────────────────────────────────────────────────────
 
     private void DrawCastle(int vw, int vh, int moonCX, int moonCY, int moonR)
     {
@@ -279,7 +338,7 @@ public class MainMenuScene : Scene
         DrawRect(bx + 16, by + 35, 10, 25, new Color(6, 3, 12));
     }
 
-    // ── Колонна ───────────────────────────────────────────────────────────
+    // ── Column ───────────────────────────────────────────────────────────
 
     private void DrawColumn(int x, int topY, int vh)
     {
@@ -293,7 +352,7 @@ public class MainMenuScene : Scene
             DrawRect(x + i, topY + 35, 1, vh - topY - 60, groove);
     }
 
-    // ── Растения ─────────────────────────────────────────────────────────
+    // ── Plants ─────────────────────────────────────────────────────────
 
     private void DrawPlants(int baseX, int vh, bool mirror = false)
     {
@@ -315,7 +374,7 @@ public class MainMenuScene : Scene
         DrawRect(baseX + m * (-35), vh - 15, 70, 20, c);
     }
 
-    // ── Орнамент ─────────────────────────────────────────────────────────
+    // ── Ornament ─────────────────────────────────────────────────────────
 
     private void DrawOrnament(int cx, int cy, bool top)
     {
@@ -329,7 +388,7 @@ public class MainMenuScene : Scene
         DrawLine(new Vector2(cx + 8, cy), new Vector2(cx + 22, cy + d * 8), c * 0.7f);
     }
 
-    // ── Геометрия ─────────────────────────────────────────────────────────
+    // ── Geometry ─────────────────────────────────────────────────────────
 
     private void DrawFilledCircle(int cx, int cy, int r, Color color)
     {

@@ -17,6 +17,8 @@ using Microsoft.Xna.Framework.Input;
 using LILITH.Core.Tools;
 using MainEngine.Audio;
 using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Media;
+using LILITH.Audio;
 
 namespace LILITH.Core.Scenes;
 
@@ -44,7 +46,7 @@ public class GameScene : Scene
     private readonly Random _random  = new();
     private GameOverScreen _gameOver = null!;
     private bool           _isGameOver;
-    
+    private bool _pauseKeyReleased = true;
 
     // ── Pause Menu ────────────────────────────────────────────────────────
 
@@ -52,6 +54,7 @@ public class GameScene : Scene
     private Button        _btnResume   = null!;
     private Button        _btnMainMenu = null!;
     private KeyboardState _prevKeys;
+
 
     // ── Enemies ──────────────────────────────────────────────────────────
 
@@ -81,6 +84,16 @@ public class GameScene : Scene
 
         _font = Content.Load<SpriteFont>("DefaultFont");
 
+        AudioAssets.PauseOpen =
+        Content.Load<SoundEffect>("audio/pause_in");
+
+        AudioAssets.PauseClose =
+        Content.Load<SoundEffect>("audio/pause_out");
+
+        AudioAssets.Footsteps =
+        Content.Load<SoundEffect>("audio/bananas_movement");
+        
+        
         // ── Player ──
         var atlas  = TextureAtlas.FromFile(Content, "player.xml");
         var idle   = atlas.CreateAnimatedSprite("idle");
@@ -88,7 +101,6 @@ public class GameScene : Scene
         var death  = atlas.CreateAnimatedSprite("death");
 
         
-
         idle.CenterOrigin();
         walk.CenterOrigin();
         death.CenterOrigin();
@@ -96,10 +108,10 @@ public class GameScene : Scene
         _controller = new PlayerController(player, _pixel, idle, walk, death);
         _controller.AddAbility(new AutoShootAbility());
 
-        SoundEffect footsteps =
+        AudioAssets.Footsteps =
         Content.Load<SoundEffect>("audio/bananas_movement");
 
-        player.SetFootstepSound(footsteps);
+        player.SetFootstepSound(AudioAssets.Footsteps);
 
         // ── Camera ──
         _camera     = new Camera();
@@ -138,8 +150,16 @@ public class GameScene : Scene
             ColorShadow  = new Color(0,   0,   0,   0),
         };
 
-        _btnResume.OnClick   += () => _isPauseMenu = false;
-        _btnMainMenu.OnClick += () => HQ.ChangeScene(new MainMenuScene());
+        _btnResume.OnClick += () =>
+        {
+            HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
+            _isPauseMenu = false;
+        };
+        _btnMainMenu.OnClick += () =>
+        {
+            HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
+            HQ.ChangeScene(new MainMenuScene());
+        };
 
         // ── Enemies ──
         _agentRegion = MakeSolidRegion(8, 8, Color.White);
@@ -227,7 +247,7 @@ public class GameScene : Scene
             };
         });
 
-        // Волна 1 — знакомство
+// Wave 1 - just walkers, slow spawn to let player get used to them
 _enemySpawner.AddWave(new Wave
 {
     Entries = new List<SpawnEntry>
@@ -238,7 +258,7 @@ _enemySpawner.AddWave(new Wave
     DelayAfterWave = 5f
 });
 
-// Волна 2 — добавляем бегунов
+// Wave 2 - more walkers + runners, no shooters yet
 _enemySpawner.AddWave(new Wave
 {
     Entries = new List<SpawnEntry>
@@ -250,7 +270,7 @@ _enemySpawner.AddWave(new Wave
     DelayAfterWave = 5f
 });
 
-// Волна 3 — добавляем стрелка
+// Wave 3 - full mix, introducing shooters
 _enemySpawner.AddWave(new Wave
 {
     Entries = new List<SpawnEntry>
@@ -263,7 +283,7 @@ _enemySpawner.AddWave(new Wave
     DelayAfterWave = 5f
 });
 
-// Волна 4 — всё вместе
+// Wave 4 - full mix, more enemies
 _enemySpawner.AddWave(new Wave
 {
     Entries = new List<SpawnEntry>
@@ -276,7 +296,7 @@ _enemySpawner.AddWave(new Wave
     DelayAfterWave = 8f
 });
 
-// Волна 5 — БОСС
+// Wave 5 - Boss wave with tanks
 _enemySpawner.AddWave(new Wave
 {
     Entries        = new List<SpawnEntry>(),
@@ -293,13 +313,39 @@ _enemySpawner.Start();
 
     public override void Update(GameTime gameTime)
     {
-        // Esc переключает меню паузы (только если не открыт экран левелапа)
+        // Esc for pause
         KeyboardState keys = Keyboard.GetState();
-        if (keys.IsKeyDown(Keys.Escape) && _prevKeys.IsKeyUp(Keys.Escape) && !_isPaused)
-            _isPauseMenu = !_isPauseMenu;
-        _prevKeys = keys;
+        if (keys.IsKeyDown(Keys.Escape) && _pauseKeyReleased)
+        {
+            _pauseKeyReleased = false;
 
-        // Меню паузы перехватывает весь ввод
+            _isPauseMenu = !_isPauseMenu;
+
+            if (_isPauseMenu)
+            {
+                HQ.Audio.PlaySoundEffect(
+                    AudioAssets.PauseOpen,
+                    0.45f,
+                    0f,
+                    0f,
+                    false);
+            }
+            else
+            {
+                HQ.Audio.PlaySoundEffect(
+                    AudioAssets.PauseClose,
+                    0.45f,
+                    0f,
+                    0f,
+                    false);
+            }
+        }
+        if (keys.IsKeyUp(Keys.Escape))
+        {
+            _pauseKeyReleased = true;
+        }
+
+        // Pause menu has priority over game pause
         if (_isPauseMenu)
         {
             _btnResume.Update(gameTime);
@@ -307,7 +353,7 @@ _enemySpawner.Start();
             return;
         }
 
-        // UI обновляется даже при левелап-паузе
+        // UI has priority over game input
         _xpBar.Update(gameTime);
         _levelUp.Update(gameTime, HQ.GraphicsDevice.Viewport);
 

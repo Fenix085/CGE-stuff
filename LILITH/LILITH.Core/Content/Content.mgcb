@@ -13,11 +13,41 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin audio/bananas_death.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/bananas_death.wav
+
 #begin audio/bananas_movement.wav
 /importer:WavImporter
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /build:audio/bananas_movement.wav
+
+#begin audio/bananas_shoot.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/bananas_shoot.wav
+
+#begin audio/buttons.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/buttons.wav
+
+#begin audio/pause_in.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/pause_in.wav
+
+#begin audio/pause_out.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/pause_out.wav
 
 #begin banana.png
 /importer:TextureImporter
