@@ -7,7 +7,7 @@ namespace LILITH.Core;
 public class Game1 : HQ
 {
     public Game1()
-        : base("LILITH", 1280, 720, false)
+        : base("Code name: LILITH", 1280, 720, false)
     {
     }
 

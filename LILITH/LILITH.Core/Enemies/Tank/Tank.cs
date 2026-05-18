@@ -10,7 +10,7 @@ namespace LILITH.Core.Enemies.Tank
 {
     public class Tank : Enemy
     {
-        public int Damage { get; set; }
+        public int Damage { get; set; } = 30;
 
         /// <summary>
         /// Damage each agent deals to the player on contact.

@@ -13,7 +13,7 @@ public class Button
     public Rectangle Bounds    { get; set; }
     public string    Label     { get; set; }
     public bool      IsHovered { get; private set; }
-
+    public bool ForceHover { get; set; } 
     public event Action? OnClick;
 
     private MouseState _prevMouse;
@@ -45,7 +45,7 @@ public class Button
         }
 
         MouseState mouse = Mouse.GetState();
-        IsHovered  = Bounds.Contains(mouse.Position);
+        IsHovered  = Bounds.Contains(mouse.Position) || ForceHover;
         _isPressed = IsHovered && mouse.LeftButton == ButtonState.Pressed;
 
         bool justClicked = IsHovered

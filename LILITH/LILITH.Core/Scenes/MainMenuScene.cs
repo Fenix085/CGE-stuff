@@ -1,5 +1,7 @@
+using System;
 using LILITH.UI;
 using MainEngine;
+using MainEngine.Input;
 using MainEngine.Scenes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -7,6 +9,7 @@ using System;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
 using LILITH.Audio;
+using Microsoft.Xna.Framework.Input;
 
 namespace LILITH.Core.Scenes;
 
@@ -24,6 +27,9 @@ public class MainMenuScene : Scene
 
     private (Vector2 pos, float size, float brightness)[] _stars = Array.Empty<(Vector2, float, float)>();
     private float _time;
+
+    private int _menuIndex = 0;
+    private bool _usingGamepad;
 
     public override void Initialize()
     {
@@ -161,6 +167,36 @@ public class MainMenuScene : Scene
     public override void Update(GameTime gameTime)
     {
         _time += (float)gameTime.ElapsedGameTime.TotalSeconds;
+        var pad = HQ.Input.GamePads[0];
+
+        if (pad.WasButtonJustPressed(Buttons.DPadUp)
+            || pad.WasButtonJustPressed(Buttons.DPadDown)
+            || pad.WasButtonJustPressed(Buttons.A))
+            _usingGamepad = true;
+
+        if (HQ.Input.Mouse.WasMoved
+            || HQ.Input.Mouse.WasButtonJustPressed(MouseButton.Left))
+            _usingGamepad = false;
+
+        if (_usingGamepad)
+        {
+            if (pad.WasButtonJustPressed(Buttons.DPadUp)
+                || pad.WasButtonJustPressed(Buttons.LeftThumbstickUp))
+                _menuIndex = Math.Max(0, _menuIndex - 1);
+
+            if (pad.WasButtonJustPressed(Buttons.DPadDown)
+                || pad.WasButtonJustPressed(Buttons.LeftThumbstickDown))
+                _menuIndex = Math.Min(1, _menuIndex + 1);
+
+            if (pad.WasButtonJustPressed(Buttons.A))
+            {
+                if (_menuIndex == 0) HQ.ChangeScene(new LevelSelectScene());
+                else                 HQ.Instance.Exit();
+            }
+        }
+
+        _btnPlay.ForceHover = _usingGamepad && _menuIndex == 0;
+        _btnExit.ForceHover = _usingGamepad && _menuIndex == 1;
 
         _btnPlay.Update(gameTime);
         _btnOptions.Update(gameTime);

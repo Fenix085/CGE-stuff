@@ -92,7 +92,7 @@ public class LevelUpScreen
         _prevMouse = mouse;
     }
 
-    public void Draw(SpriteBatch sb, Texture2D pixel, SpriteFont? font, Viewport viewport)
+    public void Draw(SpriteBatch sb, Texture2D pixel, SpriteFont? font, Viewport viewport, int levelUpCardIndex)
     {
         if (!IsVisible) return;
 
@@ -104,7 +104,7 @@ public class LevelUpScreen
 
         for (int i = 0; i < CARD_COUNT; i++)
         {
-            bool hovered = _hoveredCard == i;
+            bool hovered = _hoveredCard == i || levelUpCardIndex == i;
             var  rect    = _cardRects[i];
             if (hovered) rect.Y -= 8;
 
