@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using MainEngine;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using LILITH.Audio;
 
 namespace LILITH.Abilities;
 
 public class AutoShootAbility : IAbility
 {
     public string Name        => "Auto Shot";
-    public string Description => "Automatically shoots projectiles\nin the enemy direction.";
+    public string Description => "Autoshoots\nin the enemy direction.";
 
     // ── Parameters ─────────────────────────────────────────────────────────
 
@@ -46,6 +47,16 @@ public class AutoShootAbility : IAbility
                 aimDirection,
                 _projectileSpeed,
                 _projectileLife));
+            
+            float pitch =
+            (float)(Random.Shared.NextDouble() * 0.12 - 0.06);
+
+            HQ.Audio.PlaySoundEffect(
+            AudioAssets.Shoot,
+            0.30f,
+            pitch,
+            0f,
+            false);
 
             _fireCooldown = _fireInterval;
         }

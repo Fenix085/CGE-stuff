@@ -16,6 +16,7 @@ public class AudioController : IDisposable
 
     // Tracks the volume for sound effect playback when muting and unmuting.
     private float _previousSoundEffectVolume;
+    private Song? _currentSong;
     
     /// <summary>
     /// Gets a value that indicates if audio is muted.
@@ -162,15 +163,19 @@ public SoundEffectInstance PlaySoundEffect(SoundEffect soundEffect, float volume
 /// <param name="isRepeating">Optionally specify if the song should repeat.  Default is true.</param>
 public void PlaySong(Song song, bool isRepeating = true)
 {
-    // Check if the media player is already playing, if so, stop it.
-    // If we do not stop it, this could cause issues on some platforms
-    if (MediaPlayer.State == MediaState.Playing)
+    if (_currentSong == song &&
+        MediaPlayer.State == MediaState.Playing)
     {
-        MediaPlayer.Stop();
+        return;
     }
 
-    MediaPlayer.Play(song);
+    _currentSong = song;
+
+    MediaPlayer.Stop();
+
     MediaPlayer.IsRepeating = isRepeating;
+    MediaPlayer.Volume = 0.2f;
+    MediaPlayer.Play(song);
 }
 /// <summary>
 /// Pauses all audio.

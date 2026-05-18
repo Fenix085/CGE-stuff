@@ -37,8 +37,17 @@ public class MainMenuScene : Scene
 
         _font = Content.Load<SpriteFont>("DefaultFont");
 
-        AudioAssets.ButtonClick =
-        Content.Load<SoundEffect>("audio/buttons");
+        if (AudioAssets.ButtonClick == null)
+        {
+            AudioAssets.ButtonClick =
+                HQ.Content.Load<SoundEffect>("audio/buttons");
+        }
+
+        if (AudioAssets.MainMenuMusic == null)
+        {
+            AudioAssets.MainMenuMusic =
+                HQ.Content.Load<Song>("audio/mainmenumusic");
+        }
 
         var vp = HQ.GraphicsDevice.Viewport;
         int vw = vp.Width;
@@ -120,6 +129,7 @@ public class MainMenuScene : Scene
                 (float)(rng.NextDouble() * 0.6 + 0.4f)
             );
         }
+        HQ.Audio.PlaySong(AudioAssets.MainMenuMusic);
     }
 
     public override void Update(GameTime gameTime)

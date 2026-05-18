@@ -21,8 +21,8 @@ namespace LILITH.Core.Enemies.Walker
         public Walker(AnimatedSprite sprite, Vector2 position)
             : base(sprite, position, hp: 10)
         {
-            DetectionRadius = 400f;
-            FollowRadius = 200f;
+            DetectionRadius = 1000f;
+            FollowRadius = 1000f;
             CurrentSpeed = 0f;
             _fsm = new WalkerFSM(this);
         }

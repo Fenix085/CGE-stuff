@@ -8,22 +8,22 @@ namespace LILITH.Abilities;
 
 public class TrailAbility : IAbility
 {
-    public string Name        => "Trail";
-    public string Description => "Left a trail while\nmoving. Damages enemies on contact.";
+    public string Name        => "Death Trail";
+    public string Description => "Left a trail \nthat damages enemies.";
     public int Damage { get; private set; } = 1;
 
     // ── Параметры ─────────────────────────────────────────────────────────
 
     private float _dropRadius;
     private float _dropLifetime;
-    private float _spawnInterval;   // как часто появляется новая капля
+    private float _spawnInterval;   
     private float _spawnTimer;
 
     private const float BASE_RADIUS      = 6f;
     private const float UPGRADE_RADIUS   = 3f;
     private const float BASE_LIFETIME    = 2.0f;
     private const float BASE_INTERVAL    = 0.08f;
-    private const float MIN_MOVE_DIST    = 4f;   // минимальное смещение для спавна капли
+    private const float MIN_MOVE_DIST    = 2f;   
 
     private Vector2 _lastPlayerCenter;
     private bool    _initialized;

@@ -30,9 +30,12 @@ public class GameScene : Scene
     private Camera           _camera     = null!;
     private Texture2D        _pixel      = null!;
     private SpriteFont       _font       = null!;
+    private TextureAtlas _bossAtlas = null!;
 
     private const float CAMERA_LERP = 0.1f;
     private float _isDeathTimer;
+    private bool _deathSoundPlayed;
+    
 
     // ── Exp and UI ─────────────────────────────────────────────────────────
 
@@ -92,7 +95,15 @@ public class GameScene : Scene
 
         AudioAssets.Footsteps =
         Content.Load<SoundEffect>("audio/bananas_movement");
-        
+
+        AudioAssets.PlayerDeath =
+        Content.Load<SoundEffect>("audio/bananas_death");
+
+        AudioAssets.Shoot =
+        Content.Load<SoundEffect>("audio/bananas_shoot");
+
+        AudioAssets.GameMusic =
+        Content.Load<Song>("audio/gameplaymusic");
         
         // ── Player ──
         var atlas  = TextureAtlas.FromFile(Content, "player.xml");
@@ -167,6 +178,7 @@ public class GameScene : Scene
         var skeletonAtlas = TextureAtlas.FromFile(Content, "skeleton.xml");
         var patricktlas   = TextureAtlas.FromFile(Content, "patrick.xml");
         var orcAtlas      = TextureAtlas.FromFile(Content, "orc.xml");
+        _bossAtlas = TextureAtlas.FromFile(Content, "boss.xml");
 
         _agentConfig = new AgentConfig
         {
@@ -307,6 +319,7 @@ _enemySpawner.AddWave(new Wave
 
 _enemySpawner.OnBossWave += SpawnBoss;
 _enemySpawner.Start();
+    HQ.Audio.PlaySong(AudioAssets.GameMusic);
     }
 
     // ── Update ────────────────────────────────────────────────────────────
@@ -383,6 +396,17 @@ _enemySpawner.Start();
         {
             _isGameOver   = true;
             _isDeathTimer = 0f;
+            if (!_deathSoundPlayed && _controller.Player.Health.IsDead)
+            {
+                _deathSoundPlayed = true;
+
+                HQ.Audio.PlaySoundEffect(
+                    AudioAssets.PlayerDeath,
+                    0.7f,
+                    0f,
+                    0f,
+                    false);
+            }
         }
         
         CheckAbilityHits();
@@ -520,20 +544,21 @@ _enemySpawner.Start();
     {
         var vp = HQ.GraphicsDevice.Viewport;
 
-        // Затемнение
+        // Screen darken
         HQ.SpriteBatch.Draw(_pixel,
             new Rectangle(0, 0, vp.Width, vp.Height),
             new Color(0, 0, 0, 160));
 
-        // Панель
+        // Panel background with gothic borders
         int pw = 360, ph = 260;
         int px = (vp.Width  - pw) / 2;
         int py = (vp.Height - ph) / 2 - 20;
 
-        // Внешняя рамка готическая
+        // Inner fill
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(px, py, pw, ph), new Color(122, 85, 144));
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + 1, py + 1, pw - 2, ph - 2), new Color(18, 10, 30, 245));
-        // Внутренняя рамка
+        
+        // Inner border
         const int B = 4;
         Color innerBorder = new Color(90, 53, 112);
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + B, py + B, pw - B * 2, 1), innerBorder);
@@ -541,13 +566,13 @@ _enemySpawner.Start();
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + B, py + B, 1, ph - B * 2), innerBorder);
         HQ.SpriteBatch.Draw(_pixel, new Rectangle(px + pw - B, py + B, 1, ph - B * 2), innerBorder);
 
-        // Угловые ромбики панели
+        // Diamond corners
         DrawDiamond(px,      py,      4, new Color(147, 112, 168, 180));
         DrawDiamond(px + pw, py,      4, new Color(147, 112, 168, 180));
         DrawDiamond(px,      py + ph, 4, new Color(147, 112, 168, 180));
         DrawDiamond(px + pw, py + ph, 4, new Color(147, 112, 168, 180));
 
-        // Заголовок PAUSED
+        // Header PAUSED
         if (_font != null)
         {
             string  title = "PAUSED";
@@ -556,7 +581,7 @@ _enemySpawner.Start();
             HQ.SpriteBatch.DrawString(_font, title, pos + new Vector2(2, 2), new Color(0, 0, 0) * 0.6f);
             HQ.SpriteBatch.DrawString(_font, title, pos, new Color(212, 184, 224));
 
-            // Линия под заголовком
+            // Line under header
             HQ.SpriteBatch.Draw(_pixel,
                new Rectangle(px + 20, (int)(py + 25 + size.Y + 4), pw - 40, 1),
                 new Color(122, 85, 144, 160));
@@ -721,8 +746,8 @@ _enemySpawner.Start();
 
     private void SpawnBoss()
     {
-        var bossRegion = MakeSolidRegion(40, 40, Color.DarkRed);
-        var bossSprite = MakeAnimSprite(bossRegion);
+        var bossSprite = _bossAtlas.CreateAnimatedSprite("walk");
+        bossSprite.CenterOrigin();
         bossSprite.Scale = new Vector2(2f);
 
         Vector2 spawnPos = _controller.Player.Position + new Vector2(400f, 0f);
@@ -784,7 +809,7 @@ _enemySpawner.Start();
         float   bestDist = float.MaxValue;
         Vector2 bestDir  = Vector2.Zero;
 
-        // Проверяем всех врагов
+        // Check all enemies
         var allEnemies = new List<Enemy>();
         allEnemies.AddRange(_enemySpawner.Walkers);
         allEnemies.AddRange(_enemySpawner.Runners);

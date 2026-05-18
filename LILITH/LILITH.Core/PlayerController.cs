@@ -15,7 +15,7 @@ public class PlayerController
     private readonly List<IAbility> _abilities = new();
     private readonly Texture2D      _pixel;
 
-    // ── Анимации ──────────────────────────────────────────────────────────
+    // ── Animations ──────────────────────────────────────────────────────────
 
     private readonly AnimatedSprite? _idleAnim;
     private readonly AnimatedSprite? _walkAnim;
@@ -23,9 +23,9 @@ public class PlayerController
 
     private Vector2 _prevPosition;
 
-    // ── Конструкторы ──────────────────────────────────────────────────────
+    // ── Constructor ──────────────────────────────────────────────────────
 
-    /// <summary>Без спрайтов — используется заглушка.</summary>
+    // Playable character with a simple square sprite. For testing and prototyping.
     public PlayerController(Player player, Texture2D pixel)
     {
         Player        = player;
@@ -33,7 +33,7 @@ public class PlayerController
         _prevPosition = player.Position;
     }
 
-    /// <summary>С анимациями — переключение происходит автоматически.</summary>
+    // Playable character with actual animations. For final game.
     public PlayerController(Player player, Texture2D pixel,
                             AnimatedSprite idle, AnimatedSprite walk, AnimatedSprite death)
     {

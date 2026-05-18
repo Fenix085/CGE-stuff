@@ -8,28 +8,28 @@ namespace LILITH.Abilities;
 
 public class SlashAbility : IAbility
 {
-    public string Name        => "Slash";
-    public string Description => "Auto sword slash\n in the direction of movement.";
+    public string Name        => "Banana Slash";
+    public string Description => "Slash attack\n in the direction of movement.";
     public int Damage { get; private set; } = 10;
 
     // ── Параметры ─────────────────────────────────────────────────────────
 
-    private float _arcAngle;       // угол дуги взмаха в радианах
-    private float _arcRadius;      // длина удара
-    private float _attackInterval; // секунд между ударами
-    private float _swingDuration;  // длительность анимации взмаха
+    private float _arcAngle;       
+    private float _arcRadius;      
+    private float _attackInterval; 
+    private float _swingDuration;  
 
-    private const float BASE_ARC_ANGLE    = MathF.PI * 0.6f; // 108 градусов
+    private const float BASE_ARC_ANGLE    = MathF.PI * 0.6f; 
     private const float BASE_ARC_RADIUS   = 55f;
     private const float BASE_INTERVAL     = 1.0f;
     private const float BASE_SWING_DUR    = 0.22f;
 
     // ── Состояние ─────────────────────────────────────────────────────────
 
-    private float   _attackTimer;   // таймер до следующего удара
-    private float   _swingTimer;    // прогресс текущего взмаха (0..swingDuration)
+    private float   _attackTimer;   
+    private float   _swingTimer;    
     private bool    _isSwinging;
-    private Vector2 _swingDirection; // направление в момент удара
+    private Vector2 _swingDirection; 
     private Vector2 _lastPlayerCenter;
 
     public SlashAbility()
@@ -38,7 +38,7 @@ public class SlashAbility : IAbility
         _arcRadius      = BASE_ARC_RADIUS;
         _attackInterval = BASE_INTERVAL;
         _swingDuration  = BASE_SWING_DUR;
-        _attackTimer    = BASE_INTERVAL; // первый удар сразу
+        _attackTimer    = BASE_INTERVAL; 
     }
 
     public void Upgrade()

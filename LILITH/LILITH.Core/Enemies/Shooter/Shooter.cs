@@ -39,8 +39,8 @@ namespace LILITH.Core.Enemies.Shooter
         public Shooter(AnimatedSprite sprite, Vector2 position)
             : base(sprite, position, hp: 20)
         {
-            DetectionRadius = 450f;
-            FollowRadius = 300f;
+            DetectionRadius = 1000f;
+            FollowRadius = 1000f;
             CurrentSpeed = 0f;
             _fsm = new ShooterFSM(this);
         }

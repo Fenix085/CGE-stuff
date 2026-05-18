@@ -29,6 +29,8 @@ public class EndlessScene : Scene
     private Camera           _camera     = null!;
     private Texture2D        _pixel      = null!;
     private SpriteFont       _font       = null!;
+    private bool _deathSoundPlayed;
+    
 
     private const float CAMERA_LERP = 0.1f;
 
@@ -99,6 +101,15 @@ public class EndlessScene : Scene
         AudioAssets.Footsteps =
         Content.Load<SoundEffect>("audio/bananas_movement");
 
+        AudioAssets.PlayerDeath =
+        Content.Load<SoundEffect>("audio/bananas_death");
+
+        AudioAssets.Shoot =
+        Content.Load<SoundEffect>("audio/bananas_shoot");
+        
+        AudioAssets.GameMusic =
+        Content.Load<Song>("audio/gameplaymusic");
+
         // ── Player ──
         var atlas = TextureAtlas.FromFile(Content, "player.xml");
         var idle  = atlas.CreateAnimatedSprite("idle");
@@ -150,6 +161,7 @@ public class EndlessScene : Scene
             ColorText    = new Color(200, 168, 220),
             ColorShadow  = new Color(0,   0,   0,   0),
         };
+        
         _btnResume.OnClick += () =>
         {
             HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
@@ -199,6 +211,7 @@ public class EndlessScene : Scene
 
         // Boss spawn timer
         _bossTimer = BOSS_INTERVAL;
+        HQ.Audio.PlaySong(AudioAssets.GameMusic);
     }
 
     // ── Update ────────────────────────────────────────────────────────────
@@ -289,6 +302,17 @@ public class EndlessScene : Scene
         {
             _isGameOver  = true;
             _deathTimer  = 0f;
+            if (!_deathSoundPlayed && _controller.Player.Health.IsDead)
+            {
+                _deathSoundPlayed = true;
+
+                HQ.Audio.PlaySoundEffect(
+                    AudioAssets.PlayerDeath,
+                    0.7f,
+                    0f,
+                    0f,
+                    false);
+            }
         }
 
         CheckAbilityHits();

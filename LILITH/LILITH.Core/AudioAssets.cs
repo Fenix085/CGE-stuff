@@ -17,6 +17,7 @@ public static class AudioAssets
     public static SoundEffect Shoot     = null!;
     public static SoundEffect PlayerHit = null!;
     public static SoundEffect PlayerDeath = null!;
+    
 
     // ── Enemy ──────────────────────────────────
 

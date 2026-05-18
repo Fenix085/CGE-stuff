@@ -23,7 +23,7 @@ public class SatelliteAbility : IAbility
     private readonly List<SatelliteProjectile> _projectiles = new();
 
     private const int SAT_RADIUS = 7;
-    public string Name        => "Satellite";
+    public string Name        => "Dzen Orbs";
     public string Description => "Orbital satellite,\nshooting at the cursor.";
     public int Damage => _projectileDamage;
 

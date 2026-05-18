@@ -8,8 +8,8 @@ namespace LILITH.Abilities;
 
 public class AuraAbility : IAbility
 {
-    public string Name        => "Aura";
-    public string Description => "Produce an aura around\nthe player. Damages enemies\n on contact.";
+    public string Name        => "Sigma Aura";
+    public string Description => "Aura around\nthe player, that\n damage enemies.";
     public int Damage { get; private set; } = 1;
 
     private float _radius;

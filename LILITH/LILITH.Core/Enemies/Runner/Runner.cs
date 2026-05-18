@@ -21,8 +21,8 @@ namespace LILITH.Core.Enemies.Runner
         public Runner(AnimatedSprite sprite, Vector2 position)
             : base(sprite, position, hp: 5)
         {
-            DetectionRadius = 500f;
-            FollowRadius = 500f;
+            DetectionRadius = 1000f;
+            FollowRadius = 1000f;
             CurrentSpeed = 0f;
             _fsm = new RunnerFSM(this);
         }
