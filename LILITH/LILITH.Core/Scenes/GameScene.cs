@@ -301,8 +301,21 @@ public class GameScene : Scene
 
         // ── Player ──
         Vector2 nearestEnemyDir = GetNearestEnemyDirection();
-        Vector2 cursorWorld     = GetCursorWorld();
-        _controller.Update(gameTime, nearestEnemyDir, cursorWorld);
+        Vector2 cursorWorld;
+        Vector2 rightStick = pad.RightThumbStick;
+
+        if (rightStick.LengthSquared() > 0.04f) // deadzone
+        {
+            // Convert stick to world position: player center + stick direction * range
+            cursorWorld = _controller.Player.Center 
+                        + new Vector2(rightStick.X, -rightStick.Y) * 200f;
+        }
+        else
+        {
+            cursorWorld = GetCursorWorld();
+        }
+
+_controller.Update(gameTime, nearestEnemyDir, cursorWorld);
         
         CheckAbilityHits();
 
