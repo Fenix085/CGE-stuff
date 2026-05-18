@@ -484,6 +484,25 @@ _enemySpawner.Start();
         }
 
     _controller.Update(gameTime, nearestEnemyDir, cursorWorld);
+    if (_controller.Player.Health.IsDead && !_isGameOver)
+    {
+        _isGameOver = true;
+        _isDeathTimer = 0f;
+
+        if (!_deathSoundPlayed)
+        {
+            _deathSoundPlayed = true;
+
+            HQ.Audio.PlaySoundEffect(
+                AudioAssets.PlayerDeath,
+                0.7f,
+                0f,
+                0f,
+                false);
+        }
+
+        return;
+    }
         var p   = _controller.Player;
         float r = p.GetBounds().Radius;
 

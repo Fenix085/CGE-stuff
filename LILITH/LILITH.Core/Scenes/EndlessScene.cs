@@ -49,6 +49,8 @@ public class EndlessScene : Scene
     private IAbility[] _currentCards = Array.Empty<IAbility>();
     private int _levelUpCardIndex = 0;
     private readonly Random _random  = new();
+    private Texture2D _mapTexture = null!;
+    private readonly Rectangle _mapBounds = new Rectangle(400, 200, 1800, 1000);
 
     // ── Pause ─────────────────────────────────────────────────────────────
 
@@ -95,6 +97,8 @@ public class EndlessScene : Scene
         _pixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
         _font  = Content.Load<SpriteFont>("DefaultFont");
+
+        _mapTexture = Content.Load<Texture2D>("map");
 
         AudioAssets.PauseOpen =
         Content.Load<SoundEffect>("audio/pause_in");
@@ -363,6 +367,18 @@ public class EndlessScene : Scene
         ResolveEnemySeparation();
 
         _camera.Pos = Vector2.Lerp(_camera.Pos, _controller.Player.Center, CAMERA_LERP);
+        var vp = HQ.GraphicsDevice.Viewport;
+        float halfW = vp.Width * 0.5f;
+        float halfH = vp.Height * 0.5f;
+
+        _camera.Pos = new Vector2(
+            MathHelper.Clamp(_camera.Pos.X,
+                _mapBounds.Left + halfW,
+                _mapBounds.Right - halfW),
+
+            MathHelper.Clamp(_camera.Pos.Y,
+                _mapBounds.Top + halfH,
+                _mapBounds.Bottom - halfH));
 
         // Update spawners and enemies
         _enemySpawner.Zone.Position = _controller.Player.Position;
@@ -376,7 +392,7 @@ public class EndlessScene : Scene
         }
 
         var player = _controller.Player;
-        var vp     = HQ.GraphicsDevice.Viewport;
+        var vj     = HQ.GraphicsDevice.Viewport;
 
         _enemySpawner.Update(gameTime, player.Position,
             new Vector2(vp.Width, vp.Height), player.Health.IsDead);
@@ -481,7 +497,11 @@ public class EndlessScene : Scene
             blendState:      BlendState.AlphaBlend,
             samplerState:    SamplerState.PointClamp,
             transformMatrix: cam);
-
+        
+        HQ.SpriteBatch.Draw(
+        _mapTexture,
+        new Rectangle(0, 0, 2600, 1400),
+        Color.White);
         _xpSpawner.Draw(HQ.SpriteBatch, _pixel);
         _controller.Draw(gameTime, HQ.SpriteBatch);
         _enemySpawner.Draw(gameTime, HQ.SpriteBatch);
