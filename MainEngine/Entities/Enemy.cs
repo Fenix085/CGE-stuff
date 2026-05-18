@@ -73,6 +73,13 @@ public class Enemy : Sprite
 
     public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
     {
+        if (Velocity.X < 0)
+        {
+            Sprite.Effects = SpriteEffects.FlipHorizontally;
+        }
+        else if (Velocity.X > 0)
+            Sprite.Effects = SpriteEffects.None;
+
         Sprite.Position = Position;
         Sprite.Draw(gameTime, spriteBatch);
     }

@@ -160,6 +160,11 @@ private void HandleGamepad()
     {
         if (Sprite != null)
         {
+            if (LastMoveDirection.X < 0)
+                Sprite.Effects = SpriteEffects.FlipHorizontally;
+            else if (LastMoveDirection.X > 0)
+                Sprite.Effects = SpriteEffects.None;
+
             Sprite.Position = Position;
             Sprite.Draw(gameTime, spriteBatch);
             return;
