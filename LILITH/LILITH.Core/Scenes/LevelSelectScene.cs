@@ -43,7 +43,7 @@ public class LevelSelectScene : Scene
         int cy = vh / 2;
         int bw = 260, bh = 52, gap = 16;
 
-        _btnLevel1 = new Button(new Rectangle(cx - bw / 2, cy - bh / 2, bw, bh), "LEVEL 1")
+        _btnLevel1 = new Button(new Rectangle(cx - bw / 2, cy - bh / 2, bw, bh), "WAVES MODE")
         {
             ColorNormal  = new Color(26,  13,  40,  230),
             ColorHover   = new Color(50,  25,  70,  240),
@@ -52,7 +52,16 @@ public class LevelSelectScene : Scene
             ColorShadow  = new Color(0,   0,   0,   0),
         };
 
-        _btnBack = new Button(new Rectangle(cx - bw / 2, cy + bh / 2 + gap, bw, bh), "BACK")
+        _btnLevel2 = new Button(new Rectangle(cx - bw / 2, cy + bh / 2 + gap, bw, bh), "ENDLESS MODE")
+        {
+            ColorNormal  = new Color(26,  13,  40,  230),
+            ColorHover   = new Color(50,  25,  70,  240),
+            ColorPressed = new Color(15,  8,   25,  255),
+            ColorText    = new Color(200, 168, 220),
+            ColorShadow  = new Color(0,   0,   0,   0),
+        };
+
+        _btnBack = new Button(new Rectangle(cx - bw / 2, cy + bh / 2 + gap + bh + gap, bw, bh), "BACK")
         {
             ColorNormal  = new Color(26,  13,  40,  230),
             ColorHover   = new Color(50,  25,  70,  240),
@@ -62,6 +71,7 @@ public class LevelSelectScene : Scene
         };
 
         _btnLevel1.OnClick += () => HQ.ChangeScene(new GameScene());
+        _btnLevel2.OnClick += () => HQ.ChangeScene(new EndlessScene());
         _btnBack.OnClick   += () => HQ.ChangeScene(new MainMenuScene());
 
         // Звёзды
@@ -209,6 +219,7 @@ public class LevelSelectScene : Scene
 
         // ── Кнопки ────────────────────────────────────────────────────────
         DrawGothicButton(_btnLevel1);
+        DrawGothicButton(_btnLevel2);
         DrawGothicButton(_btnBack);
 
         HQ.SpriteBatch.End();
