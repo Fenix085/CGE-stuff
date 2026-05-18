@@ -6,7 +6,6 @@ using MainEngine.Scenes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
 using Microsoft.Xna.Framework.Audio;
 using LILITH.Audio;
 using Microsoft.Xna.Framework.Media;
@@ -16,14 +15,14 @@ namespace LILITH.Core.Scenes;
 public class LevelSelectScene : Scene
 {
     private Texture2D   _pixel = null!;
-    private SpriteFont? _font;
+    private SpriteFont _font = null!;
 
     private Button _btnLevel1 = null!;
     private Button _btnLevel2 = null!;
     private Button _btnBack   = null!;
     private bool _pendingSceneChange;
     private float _sceneChangeTimer;
-    private Action? _nextAction;
+    private Action _nextAction = null!;
 
     private int _menuIndex = 0;
     private bool _usingGamepad = false;
@@ -82,58 +81,13 @@ public class LevelSelectScene : Scene
         };
 
         _btnLevel1.OnClick += () =>
-        {
-            HQ.Audio.PlaySoundEffect(
-                AudioAssets.ButtonClick,
-                0.45f,
-                0f,
-                0f,
-                false);
-
-            _pendingSceneChange = true;
-            _sceneChangeTimer = 0.12f;
-
-            _nextAction = () =>
-            {
-                HQ.ChangeScene(new GameScene());
-            };
-        };
+            QueueSceneChange(() => HQ.ChangeScene(new GameScene()));
 
         _btnLevel2.OnClick += () =>
-        {
-            HQ.Audio.PlaySoundEffect(
-                AudioAssets.ButtonClick,
-                0.45f,
-                0f,
-                0f,
-                false);
-
-            _pendingSceneChange = true;
-            _sceneChangeTimer = 0.12f;
-
-            _nextAction = () =>
-            {
-                HQ.ChangeScene(new EndlessScene());
-            };
-        };
+            QueueSceneChange(() => HQ.ChangeScene(new EndlessScene()));
 
         _btnBack.OnClick += () =>
-        {
-            HQ.Audio.PlaySoundEffect(
-                AudioAssets.ButtonClick,
-                0.45f,
-                0f,
-                0f,
-                false);
-
-            _pendingSceneChange = true;
-            _sceneChangeTimer = 0.12f;
-
-            _nextAction = () =>
-            {
-                HQ.ChangeScene(new MainMenuScene());
-            };
-        };
+            QueueSceneChange(() => HQ.ChangeScene(new MainMenuScene()));
 
         // Stars
         var rng = new Random(99);
@@ -152,10 +106,6 @@ public class LevelSelectScene : Scene
     public override void Update(GameTime gameTime)
     {
         _time += (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-        _btnLevel1.Update(gameTime);
-        _btnLevel2.Update(gameTime);
-        _btnBack.Update(gameTime);
         
         if (_pendingSceneChange)
         {
@@ -168,9 +118,7 @@ public class LevelSelectScene : Scene
                 _nextAction = null;
             }
         }
-        
-        KeyboardState keys = Keyboard.GetState();
-        if (keys.IsKeyDown(Keys.Escape) && _prevKeys.IsKeyUp(Keys.Escape))
+
         var pad = HQ.Input.GamePads[0];
 
         if (pad.WasButtonJustPressed(Buttons.DPadUp)
@@ -191,27 +139,44 @@ public class LevelSelectScene : Scene
 
             if (pad.WasButtonJustPressed(Buttons.DPadDown)
                 || pad.WasButtonJustPressed(Buttons.LeftThumbstickDown))
-                _menuIndex = Math.Min(1, _menuIndex + 1);
+                _menuIndex = Math.Min(2, _menuIndex + 1);
 
             if (pad.WasButtonJustPressed(Buttons.A))
             {
-                if (_menuIndex == 0) HQ.ChangeScene(new GameScene());
-                else                 HQ.ChangeScene(new MainMenuScene());
+                if (_menuIndex == 0) QueueSceneChange(() => HQ.ChangeScene(new GameScene()));
+                else if (_menuIndex == 1) QueueSceneChange(() => HQ.ChangeScene(new EndlessScene()));
+                else QueueSceneChange(() => HQ.ChangeScene(new MainMenuScene()));
             }
 
             if (pad.WasButtonJustPressed(Buttons.B))
-                HQ.ChangeScene(new MainMenuScene());
+                QueueSceneChange(() => HQ.ChangeScene(new MainMenuScene()));
         }
 
         _btnLevel1.ForceHover = _usingGamepad && _menuIndex == 0;
-        _btnBack.ForceHover   = _usingGamepad && _menuIndex == 1;
+        _btnLevel2.ForceHover = _usingGamepad && _menuIndex == 1;
+        _btnBack.ForceHover   = _usingGamepad && _menuIndex == 2;
 
         _btnLevel1.Update(gameTime);
+        _btnLevel2.Update(gameTime);
         _btnBack.Update(gameTime);
 
         // Escape — back (replaces raw Keyboard.GetState)
         if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.Escape))
-            HQ.ChangeScene(new MainMenuScene());
+            QueueSceneChange(() => HQ.ChangeScene(new MainMenuScene()));
+    }
+
+    private void QueueSceneChange(Action nextAction)
+    {
+        HQ.Audio.PlaySoundEffect(
+            AudioAssets.ButtonClick,
+            0.45f,
+            0f,
+            0f,
+            false);
+
+        _pendingSceneChange = true;
+        _sceneChangeTimer = 0.12f;
+        _nextAction = nextAction;
     }
 
     public override void Draw(GameTime gameTime)

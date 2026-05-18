@@ -47,6 +47,7 @@ public class EndlessScene : Scene
 
     private const int  CARD_COUNT    = 3;
     private IAbility[] _currentCards = Array.Empty<IAbility>();
+    private int _levelUpCardIndex = 0;
     private readonly Random _random  = new();
 
     // ── Pause ─────────────────────────────────────────────────────────────
@@ -236,6 +237,7 @@ public class EndlessScene : Scene
     public override void Update(GameTime gameTime)
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        var pad = HQ.Input.GamePads[0];
         // Esc for pause
         KeyboardState keys = Keyboard.GetState();
         if (keys.IsKeyDown(Keys.Escape) && _pauseKeyReleased)
@@ -279,6 +281,30 @@ public class EndlessScene : Scene
 
         _xpBar.Update(gameTime);
         _levelUp.Update(gameTime, HQ.GraphicsDevice.Viewport);
+
+        if (_isPaused && _currentCards.Length > 0)
+        {
+            if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.Left)
+                || pad.WasButtonJustPressed(Buttons.DPadLeft)
+                || pad.WasButtonJustPressed(Buttons.LeftThumbstickLeft))
+            {
+                _levelUpCardIndex = Math.Max(0, _levelUpCardIndex - 1);
+            }
+
+            if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.Right)
+                || pad.WasButtonJustPressed(Buttons.DPadRight)
+                || pad.WasButtonJustPressed(Buttons.LeftThumbstickRight))
+            {
+                _levelUpCardIndex = Math.Min(_currentCards.Length - 1, _levelUpCardIndex + 1);
+            }
+
+            if (pad.WasButtonJustPressed(Buttons.A)
+                || HQ.Input.Keyboard.WasKeyJustPressed(Keys.Enter))
+            {
+                _levelUp.Hide();
+                HandleCardChosen(_levelUpCardIndex);
+            }
+        }
 
         if (_isPaused) return;
 
@@ -492,7 +518,7 @@ public class EndlessScene : Scene
         DrawPlayerHp();
         DrawTimer();
 
-        _levelUp.Draw(HQ.SpriteBatch, _pixel, _font, HQ.GraphicsDevice.Viewport);
+        _levelUp.Draw(HQ.SpriteBatch, _pixel, _font, HQ.GraphicsDevice.Viewport, _levelUpCardIndex);
 
         if (_isPauseMenu) DrawPauseMenu();
 
@@ -685,6 +711,7 @@ public class EndlessScene : Scene
     private void HandleLevelUp()
     {
         _isPaused     = true;
+        _levelUpCardIndex = 0;
         _currentCards = GetRandomCards();
         _levelUp.Show(HQ.GraphicsDevice.Viewport, _currentCards);
     }

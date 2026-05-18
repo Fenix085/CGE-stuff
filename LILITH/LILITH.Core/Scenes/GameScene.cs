@@ -50,7 +50,6 @@ public class GameScene : Scene
     private readonly Random _random  = new();
     private GameOverScreen _gameOver = null!;
     private bool           _isGameOver;
-    private bool _pauseKeyReleased = true;
 
     // ── Pause Menu ────────────────────────────────────────────────────────
 
@@ -352,9 +351,10 @@ _enemySpawner.Start();
         var pad = HQ.Input.GamePads[0];
 
         // Esc переключает меню паузы (только если не открыт экран левелапа)
-        if ((HQ.Input.Keyboard.WasKeyJustPressed(Keys.Escape)|| pad.WasButtonJustPressed(Buttons.Start)) && !_isPaused)
-            _isPauseMenu = !_isPauseMenu;
-
+        if ((HQ.Input.Keyboard.WasKeyJustPressed(Keys.Escape)
+            || pad.WasButtonJustPressed(Buttons.Start))
+            && !_isPaused)
+        {
             _isPauseMenu = !_isPauseMenu;
 
             if (_isPauseMenu)
@@ -375,10 +375,6 @@ _enemySpawner.Start();
                     0f,
                     false);
             }
-        }
-        if (keys.IsKeyUp(Keys.Escape))
-        {
-            _pauseKeyReleased = true;
         }
 
         // Pause menu has priority over game pause
@@ -484,7 +480,7 @@ _enemySpawner.Start();
             cursorWorld = GetCursorWorld();
         }
 
-_controller.Update(gameTime, nearestEnemyDir, cursorWorld);
+    _controller.Update(gameTime, nearestEnemyDir, cursorWorld);
         
         CheckAbilityHits();
 
