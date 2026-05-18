@@ -13,6 +13,12 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin audio/bananas_movement.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:audio/bananas_movement.wav
+
 #begin banana.png
 /importer:TextureImporter
 /processor:TextureProcessor

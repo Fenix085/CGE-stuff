@@ -15,6 +15,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using LILITH.Core.Tools;
+using MainEngine.Audio;
+using Microsoft.Xna.Framework.Audio;
 
 namespace LILITH.Core.Scenes;
 
@@ -42,6 +44,7 @@ public class GameScene : Scene
     private readonly Random _random  = new();
     private GameOverScreen _gameOver = null!;
     private bool           _isGameOver;
+    
 
     // ── Pause Menu ────────────────────────────────────────────────────────
 
@@ -84,12 +87,19 @@ public class GameScene : Scene
         var walk   = atlas.CreateAnimatedSprite("walk");
         var death  = atlas.CreateAnimatedSprite("death");
 
+        
+
         idle.CenterOrigin();
         walk.CenterOrigin();
         death.CenterOrigin();
         var player = new Player(idle, new Vector2(400, 300), hp: 50);
         _controller = new PlayerController(player, _pixel, idle, walk, death);
         _controller.AddAbility(new AutoShootAbility());
+
+        SoundEffect footsteps =
+        Content.Load<SoundEffect>("audio/bananas_movement");
+
+        player.SetFootstepSound(footsteps);
 
         // ── Camera ──
         _camera     = new Camera();
@@ -630,8 +640,11 @@ _enemySpawner.Start();
                         enemy.Health.TakeDamage(ability.Damage);
                         ability.NotifyHit(hit);
                         if (enemy.Health.IsDead)
+                        {
                             enemy.ApplyDeath();
                             _xpSpawner.SpawnOrb(enemy.Position);
+                        }
+                            
                         break;
                     }
                 }

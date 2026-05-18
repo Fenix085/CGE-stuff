@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using MainEngine.Input;
 using Microsoft.Xna.Framework.Input;
 using System;
+using Microsoft.Xna.Framework.Audio;
 
 namespace MainEngine.Entities;
 
@@ -15,6 +16,9 @@ public class Player : Sprite
 
     private readonly Texture2D? _pixel;
     private const int DEBUG_SIZE = 32;
+
+    private SoundEffect? _footstepSound;
+    private SoundEffectInstance? _footstepInstance;
 
     // ── Система опыта ─────────────────────────────────────────────────────
 
@@ -56,8 +60,14 @@ public class Player : Sprite
 
     public void Move(float timeStep)
     {
+        Vector2 oldPos = Position;
+
         HandleKeyboard();
         HandleGamepad();
+
+        bool isMoving = Vector2.DistanceSquared(oldPos, Position) > 0.01f;
+
+        UpdateFootsteps(isMoving);
     }
 
     private void HandleKeyboard()
@@ -112,6 +122,32 @@ private void HandleGamepad()
     }
 
     Position = pos;
+}
+
+public void SetFootstepSound(SoundEffect sound)
+{
+    _footstepSound = sound;
+
+    _footstepInstance = sound.CreateInstance();
+    _footstepInstance.IsLooped = true;
+    _footstepInstance.Volume = 0.35f;
+}
+
+private void UpdateFootsteps(bool isMoving)
+{
+    if (_footstepInstance == null)
+        return;
+
+    if (isMoving)
+    {
+        if (_footstepInstance.State != SoundState.Playing)
+            _footstepInstance.Play();
+    }
+    else
+    {
+        if (_footstepInstance.State == SoundState.Playing)
+            _footstepInstance.Pause();
+    }
 }
 
     // ── Опыт ──────────────────────────────────────────────────────────────
