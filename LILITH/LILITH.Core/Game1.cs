@@ -1,5 +1,6 @@
 ﻿using LILITH.Core.Scenes;
 using MainEngine;
+using System.Drawing;
 
 namespace LILITH.Core;
 
@@ -14,7 +15,7 @@ public class Game1 : HQ
     protected override void Initialize()
     {
         base.Initialize(); 
-
+        
         HQ.ChangeScene(new MainMenuScene());
     }
 }
