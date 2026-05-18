@@ -21,7 +21,7 @@ namespace LILITH.Core.Scenes;
 public class GameScene : Scene
 {
     // ── Core ──────────────────────────────────────────────────────────────
-
+    private bool _usingGamepad = false;
     private PlayerController _controller = null!;
     private Camera           _camera     = null!;
     private Texture2D        _pixel      = null!;
@@ -38,6 +38,7 @@ public class GameScene : Scene
 
     private const int  CARD_COUNT    = 3;
     private IAbility[] _currentCards = Array.Empty<IAbility>();
+    private int _levelUpCardIndex = 0;
     private readonly Random _random  = new();
 
     // ── Pause Menu ────────────────────────────────────────────────────────
@@ -45,7 +46,7 @@ public class GameScene : Scene
     private bool          _isPauseMenu = false;
     private Button        _btnResume   = null!;
     private Button        _btnMainMenu = null!;
-    private KeyboardState _prevKeys;
+    private int _pauseMenuIndex = 0;
 
     // ── Enemies ──────────────────────────────────────────────────────────
 
@@ -219,15 +220,51 @@ public class GameScene : Scene
 
     public override void Update(GameTime gameTime)
     {
+        var pad = HQ.Input.GamePads[0];
+
         // Esc переключает меню паузы (только если не открыт экран левелапа)
-        KeyboardState keys = Keyboard.GetState();
-        if (keys.IsKeyDown(Keys.Escape) && _prevKeys.IsKeyUp(Keys.Escape) && !_isPaused)
+        if ((HQ.Input.Keyboard.WasKeyJustPressed(Keys.Escape)|| pad.WasButtonJustPressed(Buttons.Start)) && !_isPaused)
             _isPauseMenu = !_isPauseMenu;
-        _prevKeys = keys;
 
         // Меню паузы перехватывает весь ввод
         if (_isPauseMenu)
         {
+            // Detect which device is active
+            if (pad.WasButtonJustPressed(Buttons.DPadUp)
+                || pad.WasButtonJustPressed(Buttons.DPadDown)
+                || pad.WasButtonJustPressed(Buttons.A)
+                || pad.WasButtonJustPressed(Buttons.B))
+                _usingGamepad = true;
+
+            if (HQ.Input.Mouse.WasMoved)
+                _usingGamepad = false;
+
+            // ── Gamepad path ──
+            if (_usingGamepad)
+            {
+                if (pad.WasButtonJustPressed(Buttons.DPadUp)
+                    || pad.WasButtonJustPressed(Buttons.LeftThumbstickUp))
+                    _pauseMenuIndex = Math.Max(0, _pauseMenuIndex - 1);
+
+                if (pad.WasButtonJustPressed(Buttons.DPadDown)
+                    || pad.WasButtonJustPressed(Buttons.LeftThumbstickDown))
+                    _pauseMenuIndex = Math.Min(1, _pauseMenuIndex + 1);
+
+                if (pad.WasButtonJustPressed(Buttons.A))
+                {
+                    if (_pauseMenuIndex == 0) _isPauseMenu = false;
+                    else HQ.ChangeScene(new MainMenuScene());
+                }
+
+                if (pad.WasButtonJustPressed(Buttons.B))
+                    _isPauseMenu = false;
+            }
+
+            // ForceHover only when gamepad is active
+            _btnResume.ForceHover   = _usingGamepad && _pauseMenuIndex == 0;
+            _btnMainMenu.ForceHover = _usingGamepad && _pauseMenuIndex == 1;
+
+            // Mouse clicks always go through Button.Update
             _btnResume.Update(gameTime);
             _btnMainMenu.Update(gameTime);
             return;
@@ -237,9 +274,29 @@ public class GameScene : Scene
         _xpBar.Update(gameTime);
         _levelUp.Update(gameTime, HQ.GraphicsDevice.Viewport);
 
-        if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.F5))
-            SpawnBoss();
+        if (_isPaused && _currentCards.Length > 0)
+        {
+            if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.Left)
+                || pad.WasButtonJustPressed(Buttons.DPadLeft)
+                || pad.WasButtonJustPressed(Buttons.LeftThumbstickLeft))
+            {
+                _levelUpCardIndex = Math.Max(0, _levelUpCardIndex - 1);
+            }
 
+            if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.Right)
+                || pad.WasButtonJustPressed(Buttons.DPadRight)
+                || pad.WasButtonJustPressed(Buttons.LeftThumbstickRight))
+            {
+                _levelUpCardIndex = Math.Min(_currentCards.Length - 1, _levelUpCardIndex + 1);
+            }
+            
+            if (pad.WasButtonJustPressed(Buttons.A)
+                || HQ.Input.Keyboard.WasKeyJustPressed(Keys.Enter))
+            {
+                _levelUp.Hide();
+                HandleCardChosen(_levelUpCardIndex);
+            }
+        }
         if (_isPaused) return;
 
         // ── Player ──
@@ -248,6 +305,9 @@ public class GameScene : Scene
         _controller.Update(gameTime, nearestEnemyDir, cursorWorld);
         
         CheckAbilityHits();
+
+        if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.F5))
+            SpawnBoss();
 
         // ── Camera ──
         _camera.Pos = Vector2.Lerp(_camera.Pos, _controller.Player.Center, CAMERA_LERP);
@@ -278,10 +338,31 @@ public class GameScene : Scene
             _boss.Update(gameTime, player.Position, playerBounds, player.Health.IsDead);
 
             if (_boss.PendingPlayerDamage > 0)
-                player.Health.TakeDamage(_boss.PendingPlayerDamage);
+                DamagePlayer(_boss.PendingPlayerDamage);
 
             if (_boss.ActiveForceSources.Count > 0)
+            {
                 _forceSources.AddRange(_boss.ActiveForceSources);
+
+                foreach (var source in _boss.ActiveForceSources)
+                {
+                    float dist    = Vector2.Distance(player.Position, source.Position);
+                    float maxDist = 800f; // vibration falloff range
+
+                    if (dist < maxDist)
+                    {
+                        // Closer = stronger, 1.0 at center → 0.0 at maxDist
+                        float intensity = 1f - (dist / maxDist);
+
+                        // Big explosion (radius 120) vs line explosion (radius 45)
+                        float strength = 1f;
+
+                        int ms = 2000;
+
+                        pad.SetVibration(strength, TimeSpan.FromMilliseconds(ms));
+                    }
+                }
+            }
         }
 
         // ── Collisions: melee ──
@@ -294,7 +375,7 @@ public class GameScene : Scene
         {
             int damage = tank.ProcessAgentHits(player.Position, playerRadius);
             if (damage > 0)
-                player.Health.TakeDamage(damage);
+                DamagePlayer(damage);
         }
 
         // ── Collisions: shooter projectiles → player ──
@@ -305,7 +386,7 @@ public class GameScene : Scene
             {
                 if (!p.IsDead && p.Bounds.Intersects(shooterPlayerBounds))
                 {
-                    player.Health.TakeDamage(shooter.Damage);
+                    DamagePlayer(shooter.Damage);
                     p.Hit = true;
                 }
             }
@@ -366,7 +447,7 @@ public class GameScene : Scene
 
         DrawPlayerHp();
 
-        _levelUp.Draw(HQ.SpriteBatch, _pixel, _font, HQ.GraphicsDevice.Viewport);
+        _levelUp.Draw(HQ.SpriteBatch, _pixel, _font, HQ.GraphicsDevice.Viewport, _levelUpCardIndex);
 
         if (_isPauseMenu)
             DrawPauseMenu();
@@ -409,6 +490,18 @@ public class GameScene : Scene
             HQ.SpriteBatch.DrawString(_font, title, pos, Color.White);
         }
 
+        Button[] pauseButtons = { _btnResume, _btnMainMenu };
+        for (int i = 0; i < pauseButtons.Length; i++)
+        {
+            if (i == _pauseMenuIndex)
+            {
+                var r = pauseButtons[i].Bounds;
+                HQ.SpriteBatch.Draw(_pixel,
+                    new Rectangle(r.X - 4, r.Y - 4, r.Width + 8, r.Height + 8),
+                    Color.White * 0.15f);
+            }
+        }
+
         _btnResume.Draw(HQ.SpriteBatch, _pixel, _font);
         _btnMainMenu.Draw(HQ.SpriteBatch, _pixel, _font);
     }
@@ -446,6 +539,7 @@ public class GameScene : Scene
     private void HandleLevelUp()
     {
         _isPaused     = true;
+        _levelUpCardIndex = 0;
         _currentCards = GetRandomCards();
         _levelUp.Show(HQ.GraphicsDevice.Viewport, _currentCards);
     }
@@ -547,13 +641,13 @@ public class GameScene : Scene
             {
                 if (Vector2.Distance(w.Position, player.Position) <= w.AttackRange
                     && w.TryAttack())
-                    player.Health.TakeDamage(w.Damage);
+                    DamagePlayer(w.Damage);
             }
             else if (enemy is Enemies.Runner.Runner r && r.IsAttacking && r.CanAttack)
             {
                 if (Vector2.Distance(r.Position, player.Position) <= r.AttackRange
                     && r.TryAttack())
-                    player.Health.TakeDamage(r.Damage);
+                    DamagePlayer(r.Damage);
             }
         }
     }
@@ -615,9 +709,8 @@ public class GameScene : Scene
 
     private Vector2 GetCursorWorld()
     {
-        MouseState mouse = Mouse.GetState();
-        Matrix     inv   = Matrix.Invert(_camera.get_transformation(HQ.GraphicsDevice));
-        return Vector2.Transform(new Vector2(mouse.X, mouse.Y), inv);
+        Matrix inv = Matrix.Invert(_camera.get_transformation(HQ.GraphicsDevice));
+        return Vector2.Transform(HQ.Input.Mouse.Position.ToVector2(), inv);
     }
 
     private void DrawHealthBar(Vector2 pos, int width, int height,
@@ -719,6 +812,12 @@ public class GameScene : Scene
                 cursorX += 4 * scale;
             }
         }
+    }
+
+    private void DamagePlayer(int amount, float strenght = 1f, int ms = 1500)
+    {
+        _controller.Player.Health.TakeDamage(amount);
+        HQ.Input.GamePads[0].SetVibration(strenght, TimeSpan.FromMicroseconds(ms));
     }
 
     // ── Texture helpers ───────────────────────────────────────────────────

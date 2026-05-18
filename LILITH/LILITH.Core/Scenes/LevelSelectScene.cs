@@ -1,5 +1,7 @@
+using System;
 using LILITH.UI;
 using MainEngine;
+using MainEngine.Input;
 using MainEngine.Scenes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -18,7 +20,8 @@ public class LevelSelectScene : Scene
     private Button _btnLevel1 = null!;
     private Button _btnBack   = null!;
 
-    private KeyboardState _prevKeys;
+    private int _menuIndex = 0;
+    private bool _usingGamepad = false;
 
     public override void Initialize()
     {
@@ -46,14 +49,47 @@ public class LevelSelectScene : Scene
 
     public override void Update(GameTime gameTime)
     {
+        var pad = HQ.Input.GamePads[0];
+
+        if (pad.WasButtonJustPressed(Buttons.DPadUp)
+            || pad.WasButtonJustPressed(Buttons.DPadDown)
+            || pad.WasButtonJustPressed(Buttons.A)
+            || pad.WasButtonJustPressed(Buttons.B))
+            _usingGamepad = true;
+
+        if (HQ.Input.Mouse.WasMoved
+            || HQ.Input.Mouse.WasButtonJustPressed(MouseButton.Left))
+            _usingGamepad = false;
+
+        if (_usingGamepad)
+        {
+            if (pad.WasButtonJustPressed(Buttons.DPadUp)
+                || pad.WasButtonJustPressed(Buttons.LeftThumbstickUp))
+                _menuIndex = Math.Max(0, _menuIndex - 1);
+
+            if (pad.WasButtonJustPressed(Buttons.DPadDown)
+                || pad.WasButtonJustPressed(Buttons.LeftThumbstickDown))
+                _menuIndex = Math.Min(1, _menuIndex + 1);
+
+            if (pad.WasButtonJustPressed(Buttons.A))
+            {
+                if (_menuIndex == 0) HQ.ChangeScene(new GameScene());
+                else                 HQ.ChangeScene(new MainMenuScene());
+            }
+
+            if (pad.WasButtonJustPressed(Buttons.B))
+                HQ.ChangeScene(new MainMenuScene());
+        }
+
+        _btnLevel1.ForceHover = _usingGamepad && _menuIndex == 0;
+        _btnBack.ForceHover   = _usingGamepad && _menuIndex == 1;
+
         _btnLevel1.Update(gameTime);
         _btnBack.Update(gameTime);
 
-        // Esc — назад в главное меню
-        KeyboardState keys = Keyboard.GetState();
-        if (keys.IsKeyDown(Keys.Escape) && _prevKeys.IsKeyUp(Keys.Escape))
+        // Escape — back (replaces raw Keyboard.GetState)
+        if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.Escape))
             HQ.ChangeScene(new MainMenuScene());
-        _prevKeys = keys;
     }
 
     public override void Draw(GameTime gameTime)

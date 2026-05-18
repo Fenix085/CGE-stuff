@@ -93,16 +93,6 @@ private void HandleGamepad()
     float       speed = MOVEMENT_SPEED;
     Vector2     pos   = Position;
 
-    if (pad.IsButtonDown(Buttons.A))
-    {
-        speed *= 1.5f;
-        pad.SetVibration(1.0f, TimeSpan.FromSeconds(1));
-    }
-    else
-    {
-        pad.StopVibration();
-    }
-
     if (pad.LeftThumbStick != Vector2.Zero)
     {
         Vector2 stick = pad.LeftThumbStick;
