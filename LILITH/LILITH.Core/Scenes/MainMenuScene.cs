@@ -16,6 +16,7 @@ public class MainMenuScene : Scene
     private SpriteFont? _font;
 
     private Button _btnPlay = null!;
+    private Button _btnOptions = null!;
     private Button _btnExit = null!;
     private bool _pendingSceneChange;
     private float _sceneChangeTimer;
@@ -58,6 +59,7 @@ public class MainMenuScene : Scene
         int bw = 260, bh = 52, gap = 16;
         int btnY1 = cy + 90;
         int btnY2 = cy + 90 + bh + gap;
+        int btnY3 = cy + 90 + (bh + gap) * 2;
 
         _btnPlay = new Button(new Rectangle(cx - bw / 2, btnY1, bw, bh), "PLAY")
         {
@@ -68,7 +70,16 @@ public class MainMenuScene : Scene
             ColorShadow  = new Color(0,   0,   0,   0),
         };
 
-        _btnExit = new Button(new Rectangle(cx - bw / 2, btnY2, bw, bh), "EXIT")
+        _btnOptions = new Button(new Rectangle(cx - bw / 2, btnY2, bw, bh), "OPTIONS")
+        {
+            ColorNormal  = new Color(26,  13,  40,  230),
+            ColorHover   = new Color(50,  25,  70,  240),
+            ColorPressed = new Color(15,  8,   25,  255),
+            ColorText    = new Color(200, 168, 220),
+            ColorShadow  = new Color(0,   0,   0,   0),
+        };
+
+        _btnExit = new Button(new Rectangle(cx - bw / 2, btnY3, bw, bh), "EXIT")
         {
             ColorNormal  = new Color(26,  13,  40,  230),
             ColorHover   = new Color(50,  25,  70,  240),
@@ -119,6 +130,21 @@ public class MainMenuScene : Scene
             };
         };
 
+        _btnOptions.OnClick += () =>
+        {
+            if (_pendingSceneChange)
+                return;
+
+            HQ.Audio.PlaySoundEffect(
+                AudioAssets.ButtonClick,
+                0.45f,
+                0f,
+                0f,
+                false);
+
+            HQ.ChangeScene(new OptionsScene(() => new MainMenuScene()));
+        };
+
         var rng = new Random(42);
         _stars = new (Vector2, float, float)[80];
         for (int i = 0; i < _stars.Length; i++)
@@ -135,8 +161,11 @@ public class MainMenuScene : Scene
     public override void Update(GameTime gameTime)
     {
         _time += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
         _btnPlay.Update(gameTime);
+        _btnOptions.Update(gameTime);
         _btnExit.Update(gameTime);
+
         if (_pendingSceneChange)
         {
             _sceneChangeTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -257,6 +286,7 @@ public class MainMenuScene : Scene
 
         // ── Buttons ────────────────────────────────────────────────────────
         DrawGothicButton(_btnPlay, vw);
+        DrawGothicButton(_btnOptions, vw);
         DrawGothicButton(_btnExit, vw);
 
         HQ.SpriteBatch.End();
