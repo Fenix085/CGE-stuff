@@ -35,6 +35,7 @@ public class AuraAbility : IAbility
     {
         _radius += UPGRADE_RADIUS_GAIN;
     }
+    public void NotifyHit(Circle hitCircle) { }
 
     public void Update(GameTime gameTime, Vector2 playerCenter, Vector2 cursorWorld)
     {

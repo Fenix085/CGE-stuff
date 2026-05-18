@@ -18,6 +18,7 @@ public class AutoShootAbility : IAbility
     private float _projectileSpeed  = 350f;
     private float _projectileLife   = 2.0f;
     private float _fireCooldown     = 0f;
+    public bool    IsExpired { get; private set; }
 
     private readonly List<AutoProjectile> _projectiles = new();
 
@@ -66,7 +67,7 @@ public class AutoShootAbility : IAbility
     }
 
     // ── Hitboxes ──────────────────────────────────────────────────────────
-
+    
     public IReadOnlyList<Circle> GetHitCircles()
     {
         var circles = new List<Circle>();
@@ -74,6 +75,13 @@ public class AutoShootAbility : IAbility
             if (!p.IsExpired)
                 circles.Add(new Circle((int)p.Position.X, (int)p.Position.Y, 4));
         return circles;
+    }
+    public void NotifyHit(Circle hitCircle)
+    {
+        foreach (var p in _projectiles)
+            if (!p.IsExpired &&
+                new Circle((int)p.Position.X, (int)p.Position.Y, 4).Intersects(hitCircle))
+                p.Kill();
     }
 
     // ── AutoProjectile ────────────────────────────────────────────
@@ -89,7 +97,7 @@ public class AutoShootAbility : IAbility
         private          float   _age;
 
         private const int RADIUS = 4;
-
+        public void Kill() => IsExpired = true;
         public AutoProjectile(Vector2 start, Vector2 direction, float speed, float lifetime)
         {
             Position   = start;

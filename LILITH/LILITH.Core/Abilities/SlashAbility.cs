@@ -48,6 +48,8 @@ public class SlashAbility : IAbility
         _attackInterval  = MathF.Max(0.4f, _attackInterval - 0.1f);
     }
 
+    public void NotifyHit(Circle hitCircle) { }
+
     // ── Update ────────────────────────────────────────────────────────────
 
     public void Update(GameTime gameTime, Vector2 playerCenter, Vector2 aimDirection)

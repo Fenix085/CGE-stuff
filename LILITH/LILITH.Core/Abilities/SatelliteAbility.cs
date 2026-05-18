@@ -97,15 +97,22 @@ public class SatelliteAbility : IAbility
     }
 
     public IReadOnlyList<Circle> GetHitCircles()
-{
-    var circles = new List<Circle>();
-    foreach (var p in _projectiles)
     {
-        if (!p.IsExpired)
-            circles.Add(new Circle((int)p.Position.X, (int)p.Position.Y, 5));
+        var circles = new List<Circle>();
+        foreach (var p in _projectiles)
+        {
+            if (!p.IsExpired)
+                circles.Add(new Circle((int)p.Position.X, (int)p.Position.Y, 5));
+        }
+        return circles;
     }
-    return circles;
-}
+    public void NotifyHit(Circle hitCircle)
+    {
+        foreach (var p in _projectiles)
+            if (!p.IsExpired &&
+                new Circle((int)p.Position.X, (int)p.Position.Y, 5).Intersects(hitCircle))
+                p.Kill();
+    }
 
     private Vector2 GetSatellitePosition(Vector2 center, int index)
     {

@@ -509,6 +509,7 @@ public class EndlessScene : Scene
                     if (hit.Intersects(bounds))
                     {
                         enemy.Health.TakeDamage(ability.Damage);
+                        ability.NotifyHit(hit);
                         if (enemy.Health.IsDead)
                         {
                             enemy.ApplyDeath();
@@ -527,6 +528,7 @@ public class EndlessScene : Scene
                     if (hit.Intersects(bossBounds))
                     {
                         _boss.Health.TakeDamage(ability.Damage);
+                        ability.NotifyHit(hit);
                         break;
                     }
                 }

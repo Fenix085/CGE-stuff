@@ -14,6 +14,7 @@ public interface IAbility
     void Update(GameTime gameTime, Vector2 playerCenter, Vector2 aimDirection);
     void Draw(GameTime gameTime, SpriteBatch spriteBatch, Texture2D pixel);
     void Upgrade();
+    void NotifyHit(Circle hitCircle);
 
     
     IReadOnlyList<Circle> GetHitCircles();

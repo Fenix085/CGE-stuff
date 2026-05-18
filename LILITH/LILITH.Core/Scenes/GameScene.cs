@@ -561,6 +561,7 @@ _enemySpawner.Start();
                     if (hit.Intersects(enemyBounds))
                     {
                         enemy.Health.TakeDamage(ability.Damage);
+                        ability.NotifyHit(hit);
                         if (enemy.Health.IsDead)
                             enemy.ApplyDeath();
                             _xpSpawner.SpawnOrb(enemy.Position);
@@ -577,6 +578,7 @@ _enemySpawner.Start();
                     if (hit.Intersects(bossBounds))
                     {
                         _boss.Health.TakeDamage(ability.Damage);
+                        ability.NotifyHit(hit);
                         if (_boss.Health.IsDead)
                         {
                             _boss.ApplyDeath();

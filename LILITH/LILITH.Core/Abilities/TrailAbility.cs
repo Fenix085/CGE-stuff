@@ -58,6 +58,8 @@ public class TrailAbility : IAbility
         _dropLifetime += 0.3f;
     }
 
+    public void NotifyHit(Circle hitCircle) { }
+
     // ── Update ────────────────────────────────────────────────────────────
 
     public void Update(GameTime gameTime, Vector2 playerCenter, Vector2 cursorWorld)
