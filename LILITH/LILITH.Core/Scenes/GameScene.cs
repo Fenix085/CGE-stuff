@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using LILITH.Abilities;
 using LILITH.Core.Enemies.Boss;
+using LILITH.Core.Tools;
 using LILITH.Items;
 using LILITH.UI;
 using MainEngine;
+using MainEngine.Audio;
 using MainEngine.Camera;
 using MainEngine.Entities;
 using MainEngine.FlockEnemy;
@@ -14,7 +16,6 @@ using MainEngine.Scenes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using LILITH.Core.Tools;
 
 namespace LILITH.Core.Scenes;
 

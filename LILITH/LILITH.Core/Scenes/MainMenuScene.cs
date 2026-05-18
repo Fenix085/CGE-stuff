@@ -1,8 +1,11 @@
 using LILITH.UI;
 using MainEngine;
 using MainEngine.Scenes;
+using MainEngine.Audio;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Media;
 
 namespace LILITH.Core.Scenes;
 
@@ -11,9 +14,9 @@ namespace LILITH.Core.Scenes;
 /// </summary>
 public class MainMenuScene : Scene
 {
+    private Song _bgMusic;
     private Texture2D   _pixel = null!;
     private SpriteFont? _font;
-
     private Button _btnPlay = null!;
     private Button _btnExit = null!;
 
@@ -25,6 +28,8 @@ public class MainMenuScene : Scene
 
     public override void LoadContent()
     {
+        _bgMusic = HQ.Content.Load<Song>("Audio/Music/MainMenu");
+        HQ.Audio.PlaySong(_bgMusic);
         _pixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
 
