@@ -31,6 +31,8 @@ public class GameScene : Scene
     private Texture2D        _pixel      = null!;
     private SpriteFont       _font       = null!;
     private TextureAtlas _bossAtlas = null!;
+    private Texture2D _mapTexture = null!;
+    private readonly Rectangle _mapBounds = new Rectangle(400, 200, 1800, 1000);
 
     private const float CAMERA_LERP = 0.1f;
     private float _isDeathTimer;
@@ -50,6 +52,7 @@ public class GameScene : Scene
     private readonly Random _random  = new();
     private GameOverScreen _gameOver = null!;
     private bool           _isGameOver;
+    private bool _isOptionsMenu;
 
     // ── Pause Menu ────────────────────────────────────────────────────────
 
@@ -87,8 +90,9 @@ public class GameScene : Scene
         _pixel.SetData(new[] { Color.White });
 
         _font = Content.Load<SpriteFont>("DefaultFont");
-        
 
+        _mapTexture = Content.Load<Texture2D>("map");
+        
         AudioAssets.PauseOpen =
         Content.Load<SoundEffect>("audio/pause_in");
 
@@ -180,7 +184,7 @@ public class GameScene : Scene
         _btnOptions.OnClick += () =>
         {
             HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
-            HQ.ChangeScene(new OptionsScene(() => new MainMenuScene()));
+            _isOptionsMenu = true;
         };
         _btnMainMenu.OnClick += () =>
         {
@@ -481,6 +485,12 @@ _enemySpawner.Start();
         }
 
     _controller.Update(gameTime, nearestEnemyDir, cursorWorld);
+        var p   = _controller.Player;
+        float r = p.GetBounds().Radius;
+
+        p.Position = new Vector2(
+            MathHelper.Clamp(p.Position.X, _mapBounds.Left   + r, _mapBounds.Right  - r),
+            MathHelper.Clamp(p.Position.Y, _mapBounds.Top    + r, _mapBounds.Bottom - r));
         
         CheckAbilityHits();
 
@@ -489,6 +499,15 @@ _enemySpawner.Start();
 
         // ── Camera ──
         _camera.Pos = Vector2.Lerp(_camera.Pos, _controller.Player.Center, CAMERA_LERP);
+        var vp      = HQ.GraphicsDevice.Viewport;
+        float halfW = vp.Width  * 0.5f;
+        float halfH = vp.Height * 0.5f;
+
+        _camera.Pos = new Vector2(
+            MathHelper.Clamp(_camera.Pos.X,
+                _mapBounds.Left   + halfW, _mapBounds.Right  - halfW),
+            MathHelper.Clamp(_camera.Pos.Y,
+                _mapBounds.Top    + halfH, _mapBounds.Bottom - halfH));
 
         // ── Experience ──
         _xpSpawner.Update(gameTime, _camera.Pos, HQ.GraphicsDevice.Viewport);
@@ -562,12 +581,12 @@ _enemySpawner.Start();
         Circle shooterPlayerBounds = player.GetBounds();
         foreach (var shooter in _enemySpawner.Shooters)
         {
-            foreach (var p in shooter.Projectiles)
+            foreach (var j in shooter.Projectiles)
             {
-                if (!p.IsDead && p.Bounds.Intersects(shooterPlayerBounds))
+                if (!j.IsDead && j.Bounds.Intersects(shooterPlayerBounds))
                 {
                     DamagePlayer(shooter.Damage);
-                    p.Hit = true;
+                    j.Hit = true;
                 }
             }
         }
@@ -578,7 +597,7 @@ _enemySpawner.Start();
     public override void Draw(GameTime gameTime)
     {
         HQ.GraphicsDevice.Clear(new Color(20, 20, 30));
-
+    
         Matrix cameraMatrix = _camera.get_transformation(HQ.GraphicsDevice);
 
         // World layer
@@ -587,7 +606,9 @@ _enemySpawner.Start();
             blendState:      BlendState.AlphaBlend,
             samplerState:    SamplerState.PointClamp,
             transformMatrix: cameraMatrix);
-
+        HQ.SpriteBatch.Draw(_mapTexture,
+                new Rectangle(0, 0, 2600, 1400),
+                Color.White);
         _xpSpawner.Draw(HQ.SpriteBatch, _pixel);
         _controller.Draw(gameTime, HQ.SpriteBatch);
         _enemySpawner.Draw(gameTime, HQ.SpriteBatch);

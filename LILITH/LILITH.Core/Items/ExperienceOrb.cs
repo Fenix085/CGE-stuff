@@ -1,12 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-
 namespace LILITH.Items;
-
-/// <summary>
-/// Частица опыта — зелёный пульсирующий кружок.
-/// </summary>
 public class ExperienceOrb
 {
     public Vector2 Position   { get; set; }
