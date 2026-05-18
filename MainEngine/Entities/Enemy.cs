@@ -11,8 +11,11 @@ public class Enemy : Sprite
     public bool IsDead = false;
     public Vector2 Velocity { get; private set; }
     public float CurrentSpeed { get; set; } = 0f;
-    public float DetectionRadius {get; set;} = 500f;
-    public float FollowRadius {get; set;} = 200f;
+    public float DetectionRadius {get; set;} = 1000f;
+    public float FollowRadius {get; set;} = 1000f;
+    
+    private float _hitFlashTimer = 0f;
+    private const float HIT_FLASH_DURATION = 0.12f;
 
     public Enemy(AnimatedSprite sprite, Vector2 position, int hp)
     {
@@ -21,8 +24,19 @@ public class Enemy : Sprite
         Health = new Health(hp);
     }
 
+    public void TriggerHitFlash()
+    {
+        _hitFlashTimer = HIT_FLASH_DURATION;
+    }
+
     public override void Update(GameTime gameTime)
     {
+        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        if (_hitFlashTimer > 0f)
+        {
+            _hitFlashTimer -= dt;
+        }
         Sprite.Update(gameTime);
     }
 
@@ -80,6 +94,7 @@ public class Enemy : Sprite
         else if (Velocity.X > 0)
             Sprite.Effects = SpriteEffects.None;
 
+        Sprite.Color    = _hitFlashTimer > 0f ? Color.Red : Color.White;
         Sprite.Position = Position;
         Sprite.Draw(gameTime, spriteBatch);
     }

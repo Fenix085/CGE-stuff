@@ -13,6 +13,7 @@ public struct ForceSource
     public Vector2 Position;
     public float Radius;
     public float Force;
+    
 
     public ForceSource(Vector2 position, float radius, float force)
     {
@@ -42,6 +43,7 @@ public class Agent : Sprite
 {
     public Vector2 Center;
     public Vector2 Velocity;
+    private AnimatedSprite? _animatedSprite;
 
     private readonly List<Vector2> _neighborRepulsion = new();
     private readonly List<Vector2> _neighborAlignment = new();
@@ -59,11 +61,15 @@ public class Agent : Sprite
         Velocity = velocity;
     }
 
-    public Agent(TextureRegion textureRegion, Vector2 startPosition) : base(textureRegion)
+    public Agent(AnimatedSprite sprite, Vector2 startPosition)
+    : base(sprite.Region)
     {
+        _animatedSprite = sprite;
+
         Position = startPosition;
         Center = startPosition;
         Velocity = Vector2.UnitX;
+
         CenterOrigin();
     }
 
@@ -232,7 +238,13 @@ public class Agent : Sprite
     public override void Update(GameTime gameTime)
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
         Move(dt);
+
+        _animatedSprite?.Update(gameTime);
+
+        if (_animatedSprite != null)
+            Region = _animatedSprite.Region;
     }
 
     public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)

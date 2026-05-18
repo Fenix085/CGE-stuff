@@ -63,6 +63,7 @@ public class EndlessScene : Scene
     private TextureRegion                _agentRegion  = null!;
     private readonly List<ForceSource>   _forceSources = new();
     private Navigation                   _nav          = null!;
+    private TextureAtlas _bossAtlas = null!;
 
     // ── Difficulty ────────────────────────────────────────────────────────
 
@@ -77,6 +78,7 @@ public class EndlessScene : Scene
     private bool  _bossAlive       = false;
     private float _bossTimer       = 0f;
     private const float BOSS_INTERVAL = 120f;
+    
 
     // ── Initialization ────────────────────────────────────────────────────
 
@@ -442,8 +444,22 @@ public class EndlessScene : Scene
         _controller.Draw(gameTime, HQ.SpriteBatch);
         _enemySpawner.Draw(gameTime, HQ.SpriteBatch);
 
-        if (_bossAlive && !_boss.IsDead)
-            _boss.Draw(gameTime, HQ.SpriteBatch);
+        if (_bossAlive)
+        {
+            foreach (Circle zone in _boss.WarningZones)
+                DrawCircle(zone.Location.ToVector2(), zone.Radius, Color.Red * 0.3f);
+
+            if (!_boss.IsDead)
+            {
+                _boss.Draw(gameTime, HQ.SpriteBatch);
+                DrawHealthBar(
+                    _boss.Position + new Vector2(-30f, -_boss.Sprite.Height * 0.5f - 12f),
+                    60, 6,
+                    _boss.Health.CurrentHealth,
+                    _boss.Health.MaxHealth,
+                    Color.Red);
+            }
+        }
 
         HQ.SpriteBatch.End();
 
@@ -485,7 +501,46 @@ public class EndlessScene : Scene
         HQ.SpriteBatch.DrawString(_font, text, pos + new Vector2(1, 1), Color.Black);
         HQ.SpriteBatch.DrawString(_font, text, pos, Color.White);
     }
+    private void DrawCircle(Vector2 center, float radius, Color color, int segments = 48)
+    {
+        float   step = MathF.PI * 2f / segments;
+        Vector2 prev = center + new Vector2(radius, 0);
 
+        for (int i = 1; i <= segments; i++)
+        {
+            float   angle = step * i;
+            Vector2 next  = center + new Vector2(
+                MathF.Cos(angle) * radius,
+                MathF.Sin(angle) * radius);
+            DrawLine(prev, next, color, 2f);
+            prev = next;
+        }
+    }
+    private void DrawHealthBar(Vector2 pos, int width, int height,
+                                int current, int max, Color color)
+    {
+        float ratio = (float)current / max;
+
+        HQ.SpriteBatch.Draw(_pixel,
+            new Rectangle((int)pos.X, (int)pos.Y, width, height),
+            Color.Black * 0.7f);
+
+        HQ.SpriteBatch.Draw(_pixel,
+            new Rectangle((int)pos.X, (int)pos.Y, (int)(width * ratio), height),
+            color);
+    }
+
+    private void DrawLine(Vector2 start, Vector2 end, Color color, float thickness)
+    {
+        Vector2 delta  = end - start;
+        float   length = delta.Length();
+        if (length < 0.001f) return;
+
+        float angle = MathF.Atan2(delta.Y, delta.X);
+        HQ.SpriteBatch.Draw(_pixel, start, null, color, angle,
+            Vector2.Zero, new Vector2(length, thickness),
+            SpriteEffects.None, 0f);
+    }
     private void DrawPlayerHp()
     {
         if (_font == null) return;
@@ -637,8 +692,8 @@ public class EndlessScene : Scene
 
     private void SpawnBoss()
     {
-        var bossRegion = MakeSolidRegion(40, 40, Color.DarkRed);
-        var bossSprite = MakeAnimSprite(bossRegion);
+        var bossSprite = _bossAtlas.CreateAnimatedSprite("walk");
+        bossSprite.CenterOrigin();
         bossSprite.Scale = new Vector2(2f);
 
         Vector2 spawnPos = _controller.Player.Position + new Vector2(500f, 0f);
@@ -670,6 +725,7 @@ public class EndlessScene : Scene
                     if (hit.Intersects(bounds))
                     {
                         enemy.Health.TakeDamage(ability.Damage);
+                        enemy.TriggerHitFlash();
                         ability.NotifyHit(hit);
                         if (enemy.Health.IsDead)
                         {
@@ -689,6 +745,7 @@ public class EndlessScene : Scene
                     if (hit.Intersects(bossBounds))
                     {
                         _boss.Health.TakeDamage(ability.Damage);
+                        _boss.TriggerHitFlash();
                         ability.NotifyHit(hit);
                         break;
                     }
@@ -823,7 +880,9 @@ public class EndlessScene : Scene
         var skeletonAtlas = TextureAtlas.FromFile(Content, "skeleton.xml");
         var patrickAtlas  = TextureAtlas.FromFile(Content, "patrick.xml");
         var orcAtlas      = TextureAtlas.FromFile(Content, "orc.xml");
-
+        _bossAtlas = TextureAtlas.FromFile(Content, "boss.xml");
+        var flyAtlas = TextureAtlas.FromFile(Content, "fly.xml");
+        
         _enemySpawner.RegisterFactory(EnemyType.Walker, pos =>
         {
             var s = skeletonAtlas.CreateAnimatedSprite("walk");
@@ -867,8 +926,14 @@ public class EndlessScene : Scene
                 AgentHitRadius           = 10f,
                 AgentFactory             = aPos =>
                 {
-                    var agent = new Agent(_agentRegion, aPos);
-                    agent.Scale = new Vector2(1f);
+                    var fly = flyAtlas.CreateAnimatedSprite("walk");
+
+                    fly.CenterOrigin();
+                    fly.Scale = new Vector2(2f);
+
+                    var agent = new Agent(fly, aPos);
+                    agent.Scale = new Vector2(2f);
+
                     return agent;
                 }
             };

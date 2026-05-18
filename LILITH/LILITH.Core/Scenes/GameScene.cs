@@ -86,6 +86,7 @@ public class GameScene : Scene
         _pixel.SetData(new[] { Color.White });
 
         _font = Content.Load<SpriteFont>("DefaultFont");
+        
 
         AudioAssets.PauseOpen =
         Content.Load<SoundEffect>("audio/pause_in");
@@ -110,7 +111,7 @@ public class GameScene : Scene
         var idle   = atlas.CreateAnimatedSprite("idle");
         var walk   = atlas.CreateAnimatedSprite("walk");
         var death  = atlas.CreateAnimatedSprite("death");
-
+        
         
         idle.CenterOrigin();
         walk.CenterOrigin();
@@ -173,12 +174,12 @@ public class GameScene : Scene
         };
 
         // ── Enemies ──
-        _agentRegion = MakeSolidRegion(8, 8, Color.White);
         var projectileRegion = MakeSolidRegion(6, 3, Color.Yellow);
         var skeletonAtlas = TextureAtlas.FromFile(Content, "skeleton.xml");
         var patricktlas   = TextureAtlas.FromFile(Content, "patrick.xml");
         var orcAtlas      = TextureAtlas.FromFile(Content, "orc.xml");
         _bossAtlas = TextureAtlas.FromFile(Content, "boss.xml");
+        var flyAtlas = TextureAtlas.FromFile(Content, "fly.xml");
 
         _agentConfig = new AgentConfig
         {
@@ -252,8 +253,14 @@ public class GameScene : Scene
                 AgentHitRadius           = 10f,
                 AgentFactory             = aPos =>
                 {
-                    var agent = new Agent(_agentRegion, aPos);
-                    agent.Scale = new Vector2(1f);
+                    var fly = flyAtlas.CreateAnimatedSprite("walk");
+
+                    fly.CenterOrigin();
+                    fly.Scale = new Vector2(2f);
+
+                    var agent = new Agent(fly, aPos);
+                    agent.Scale = new Vector2(2f);
+
                     return agent;
                 }
             };
@@ -709,6 +716,7 @@ _enemySpawner.Start();
                     if (hit.Intersects(enemyBounds))
                     {
                         enemy.Health.TakeDamage(ability.Damage);
+                        enemy.TriggerHitFlash();
                         ability.NotifyHit(hit);
                         if (enemy.Health.IsDead)
                         {
@@ -729,6 +737,7 @@ _enemySpawner.Start();
                     if (hit.Intersects(bossBounds))
                     {
                         _boss.Health.TakeDamage(ability.Damage);
+                        _boss.TriggerHitFlash();
                         ability.NotifyHit(hit);
                         if (_boss.Health.IsDead)
                         {
