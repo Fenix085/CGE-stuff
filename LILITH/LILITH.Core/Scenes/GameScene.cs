@@ -123,8 +123,8 @@ public class GameScene : Scene
             DebugVisible     = false
         };
 
-        _nav = new Navigation();
-        BuildNavGraph();
+        // _nav = new Navigation();
+        // BuildNavGraph();
 
         _enemySpawner = new WaveSpawner();
         _enemySpawner.SetNavigation(_nav);
@@ -368,6 +368,7 @@ public class GameScene : Scene
         // ── Collisions: melee ──
         CheckMeleeHits(_enemySpawner.Walkers);
         CheckMeleeHits(_enemySpawner.Runners);
+        CheckMeleeHits(_enemySpawner.Tanks);
 
         // ── Collisions: tank agents → player ──
         float playerRadius = player.GetBounds().Radius;
@@ -654,27 +655,27 @@ public class GameScene : Scene
 
     // ── Navigation ────────────────────────────────────────────────────────
 
-    private void BuildNavGraph()
-    {
-        var a = new NavNode { Id = 1, Position = new Vector2(100, 100) };
-        var b = new NavNode { Id = 2, Position = new Vector2(400, 100) };
-        var c = new NavNode { Id = 3, Position = new Vector2(700, 100) };
-        var d = new NavNode { Id = 4, Position = new Vector2(400, 300) };
-        var e = new NavNode { Id = 5, Position = new Vector2(100, 500) };
-        var f = new NavNode { Id = 6, Position = new Vector2(700, 500) };
+    // private void BuildNavGraph()
+    // {
+    //     var a = new NavNode { Id = 1, Position = new Vector2(100, 100) };
+    //     var b = new NavNode { Id = 2, Position = new Vector2(400, 100) };
+    //     var c = new NavNode { Id = 3, Position = new Vector2(700, 100) };
+    //     var d = new NavNode { Id = 4, Position = new Vector2(400, 300) };
+    //     var e = new NavNode { Id = 5, Position = new Vector2(100, 500) };
+    //     var f = new NavNode { Id = 6, Position = new Vector2(700, 500) };
 
-        _nav.AddNode(a); _nav.AddNode(b); _nav.AddNode(c);
-        _nav.AddNode(d); _nav.AddNode(e); _nav.AddNode(f);
+    //     _nav.AddNode(a); _nav.AddNode(b); _nav.AddNode(c);
+    //     _nav.AddNode(d); _nav.AddNode(e); _nav.AddNode(f);
 
-        int id = 1;
-        _nav.AddHighway(Highway.Create(id++, 1, 2, a.Position, b.Position, 90f));
-        _nav.AddHighway(Highway.Create(id++, 2, 3, b.Position, c.Position, 90f));
-        _nav.AddHighway(Highway.Create(id++, 2, 4, b.Position, d.Position, 90f));
-        _nav.AddHighway(Highway.Create(id++, 4, 5, d.Position, e.Position, 90f));
-        _nav.AddHighway(Highway.Create(id++, 4, 6, d.Position, f.Position, 90f));
-        _nav.AddHighway(Highway.Create(id++, 1, 5, a.Position, e.Position, 90f));
-        _nav.AddHighway(Highway.Create(id++, 3, 6, c.Position, f.Position, 90f));
-    }
+    //     int id = 1;
+    //     _nav.AddHighway(Highway.Create(id++, 1, 2, a.Position, b.Position, 90f));
+    //     _nav.AddHighway(Highway.Create(id++, 2, 3, b.Position, c.Position, 90f));
+    //     _nav.AddHighway(Highway.Create(id++, 2, 4, b.Position, d.Position, 90f));
+    //     _nav.AddHighway(Highway.Create(id++, 4, 5, d.Position, e.Position, 90f));
+    //     _nav.AddHighway(Highway.Create(id++, 4, 6, d.Position, f.Position, 90f));
+    //     _nav.AddHighway(Highway.Create(id++, 1, 5, a.Position, e.Position, 90f));
+    //     _nav.AddHighway(Highway.Create(id++, 3, 6, c.Position, f.Position, 90f));
+    // }
     private Vector2 GetNearestEnemyDirection()
     {
         var player = _controller.Player;
