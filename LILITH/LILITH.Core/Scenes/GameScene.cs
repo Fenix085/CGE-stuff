@@ -125,6 +125,8 @@ public class GameScene : Scene
         AudioAssets.GameMusic =
         Content.Load<Song>("audio/gameplaymusic");
         
+        AbilityAssets.Load(Content);
+        
         // ── Player ──
         var atlas  = TextureAtlas.FromFile(Content, "player.xml");
         var idle   = atlas.CreateAnimatedSprite("idle");

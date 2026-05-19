@@ -27,6 +27,7 @@ public class LevelUpScreen
     // Данные карточек — заполняются при Show()
     private readonly string[] _cardNames        = new string[CARD_COUNT];
     private readonly string[] _cardDescriptions = new string[CARD_COUNT];
+    private readonly Texture2D[] _cardIcons = new Texture2D[CARD_COUNT];
 
     private static readonly Color OverlayColor = new Color(0,   0,   0,   160);
     private static readonly Color CardBg        = new Color(30,  30,  50,  240);
@@ -55,11 +56,13 @@ public class LevelUpScreen
             {
                 _cardNames[i]        = cards[i].Name;
                 _cardDescriptions[i] = cards[i].Description;
+                _cardIcons[i] = cards[i].Icon;
             }
             else
             {
                 _cardNames[i]        = "???";
                 _cardDescriptions[i] = "";
+                _cardIcons[i] = null!;
             }
         }
     }
@@ -104,7 +107,12 @@ public class LevelUpScreen
 
         for (int i = 0; i < CARD_COUNT; i++)
         {
-            bool hovered = _hoveredCard == i || levelUpCardIndex == i;
+            bool usingMouse = _hoveredCard != -1;
+
+            bool hovered =
+                usingMouse
+                    ? _hoveredCard == i
+                    : levelUpCardIndex == i;
             var  rect    = _cardRects[i];
             if (hovered) rect.Y -= 8;
 
@@ -123,29 +131,30 @@ public class LevelUpScreen
             sb.Draw(pixel, new Rectangle(rect.X,                  rect.Y + rect.Height - B, rect.Width, B),  border * alpha);
             sb.Draw(pixel, new Rectangle(rect.X,                  rect.Y,                   B, rect.Height), border * alpha);
             sb.Draw(pixel, new Rectangle(rect.X + rect.Width - B, rect.Y,                   B, rect.Height), border * alpha);
+            Rectangle iconRect = new Rectangle(
+            rect.X + 48,
+            rect.Y + 20,
+            64,
+            64);
 
-            // Иконка-заглушка
-            Color iconColor = i switch
+            if (_cardIcons[i] != null)
             {
-                0 => new Color(80,  160, 255),
-                1 => new Color(255, 100, 80),
-                _ => new Color(180, 80,  255)
-            };
-            sb.Draw(pixel,
-                new Rectangle(rect.X + 20, rect.Y + 15, CARD_WIDTH - 40, 70),
-                iconColor * alpha);
-
+                sb.Draw(
+                    _cardIcons[i],
+                    iconRect,
+                    Color.White * alpha);
+            }
             if (font != null)
             {
-                // Заголовок — по центру карточки
+                // Header
                 Vector2 titleSize = font.MeasureString(_cardNames[i]);
                 Vector2 titlePos  = new Vector2(
                     rect.X + (CARD_WIDTH - titleSize.X) / 2f,
-                    rect.Y + 95f);
+                    rect.Y + 110f);
 
                 sb.DrawString(font, _cardNames[i], titlePos, Color.Yellow * alpha);
 
-                // Разделитель
+                // Separator
                 sb.Draw(pixel,
                     new Rectangle(rect.X + 10, (int)titlePos.Y + (int)titleSize.Y + 4,
                                   CARD_WIDTH - 20, 1),

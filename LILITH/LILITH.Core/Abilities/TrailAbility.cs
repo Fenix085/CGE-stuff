@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MainEngine;
+using MainEngine.Graphics;
 
 namespace LILITH.Abilities;
 
@@ -11,6 +12,7 @@ public class TrailAbility : IAbility
     public string Name        => "Death Trail";
     public string Description => "Left a trail \nthat damages enemies.";
     public int Damage { get; private set; } = 1;
+    public Texture2D Icon => AbilityAssets.TrailIcon;
 
     // ── Параметры ─────────────────────────────────────────────────────────
 

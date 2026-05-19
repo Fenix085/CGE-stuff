@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MainEngine;
+using MainEngine.Graphics;
 
 namespace LILITH.Abilities;
 
@@ -26,6 +27,7 @@ public class SatelliteAbility : IAbility
     public string Name        => "Dzen Orbs";
     public string Description => "Orbital satellite,\nshooting at the cursor.";
     public int Damage => _projectileDamage;
+    public Texture2D Icon => AbilityAssets.SatelliteIcon;
 
     public SatelliteAbility()
     {

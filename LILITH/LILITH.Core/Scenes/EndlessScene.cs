@@ -100,6 +100,7 @@ public class EndlessScene : Scene
         _pixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
         _font  = Content.Load<SpriteFont>("DefaultFont");
+        AbilityAssets.Load(Content);
 
         _settingsPanel = new SettingsPanel(
         _pixel,

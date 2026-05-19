@@ -4,6 +4,7 @@ using MainEngine;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using LILITH.Audio;
+using MainEngine.Graphics;
 
 namespace LILITH.Abilities;
 
@@ -20,6 +21,7 @@ public class AutoShootAbility : IAbility
     private float _projectileLife   = 2.0f;
     private float _fireCooldown     = 0f;
     public bool    IsExpired { get; private set; }
+    public Texture2D Icon => AbilityAssets.AutoShootIcon;
 
     private readonly List<AutoProjectile> _projectiles = new();
 

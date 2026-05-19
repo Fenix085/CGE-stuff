@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using MainEngine;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-
+using MainEngine.Graphics;
 namespace LILITH.Abilities;
 
 public class SlashAbility : IAbility
@@ -11,6 +11,7 @@ public class SlashAbility : IAbility
     public string Name        => "Banana Slash";
     public string Description => "Slash attack\n in the direction of movement.";
     public int Damage { get; private set; } = 10;
+    public Texture2D Icon => AbilityAssets.SlashIcon;
 
     // ── Параметры ─────────────────────────────────────────────────────────
 

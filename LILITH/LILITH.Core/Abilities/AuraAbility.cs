@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MainEngine;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MainEngine.Graphics;
 
 namespace LILITH.Abilities;
 
@@ -25,6 +26,7 @@ public class AuraAbility : IAbility
     private float _damageTimer = 0f;
     private const float DAMAGE_INTERVAL = 1.0f;
     private bool _canDamage = false;
+    public Texture2D Icon => AbilityAssets.AuraIcon;
 
     public AuraAbility()
     {
