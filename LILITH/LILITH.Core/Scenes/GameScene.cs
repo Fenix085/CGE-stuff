@@ -24,7 +24,6 @@ namespace LILITH.Core.Scenes;
 public class GameScene : Scene
 {
     // ── Core ──────────────────────────────────────────────────────────────
-    private bool _usingGamepad = false;
     private PlayerController _controller = null!;
     private Camera           _camera     = null!;
     private Texture2D        _pixel      = null!;
@@ -57,10 +56,13 @@ public class GameScene : Scene
     private VictoryScreen _victoryScreen = null!;
     private bool _isVictory;
     private float _victoryTimer;
+    
 
     // ── Pause Menu ────────────────────────────────────────────────────────
 
     private bool          _isPauseMenu = false;
+    private SettingsPanel _settingsPanel = null!;
+    private bool _isSettingsMenu;
     private Button        _btnResume   = null!;
     private Button        _btnOptions  = null!;
     private Button        _btnMainMenu = null!;
@@ -94,8 +96,14 @@ public class GameScene : Scene
         _pixel.SetData(new[] { Color.White });
         _gameOver = new GameOverScreen();
         _victoryScreen = new VictoryScreen();
-
         _font = Content.Load<SpriteFont>("DefaultFont");
+
+        _settingsPanel = new SettingsPanel(
+            _pixel,
+            _font,
+            () => _isSettingsMenu = false);
+
+        _settingsPanel.Initialize(HQ.GraphicsDevice.Viewport);
 
         _mapTexture = Content.Load<Texture2D>("map");
         
@@ -181,20 +189,36 @@ public class GameScene : Scene
             ColorText    = new Color(200, 168, 220),
             ColorShadow  = new Color(0,   0,   0,   0),
         };
+        
+        int obw = 52;
+        int obh = 40;
 
+        int barLeft = cx - 55;
+
+        int plusX  = barLeft + 140;
+        int minusX = barLeft - obw - 10;
+
+        int musicY = cy - 20;
+        int sfxY   = cy + 50;
+
+        
         _btnResume.OnClick += () =>
         {
             HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
+
+            _isSettingsMenu = false;
             _isPauseMenu = false;
         };
         _btnOptions.OnClick += () =>
         {
-            HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
-            _isOptionsMenu = true;
+            HQ.Audio.PlaySoundEffect(AudioAssets.PauseOpen);
+            _isSettingsMenu = true;
         };
         _btnMainMenu.OnClick += () =>
         {
             HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
+            _isSettingsMenu = false;
+            _isPauseMenu = false;
             HQ.ChangeScene(new MainMenuScene());
         };
 
@@ -367,22 +391,37 @@ bool pausePressed =
 if (pausePressed)
 {
     _pauseKeyReleased = false;
-
-    _isPauseMenu = !_isPauseMenu;
-
-    if (_isPauseMenu)
+    // SETTINGS -> back to pause
+    if (_isSettingsMenu)
     {
+        _isSettingsMenu = false;
+
         HQ.Audio.PlaySoundEffect(
-            AudioAssets.PauseOpen,
+            AudioAssets.PauseClose,
             0.45f,
             0f,
             0f,
             false);
     }
-    else
+    // PAUSE -> resume
+    else if (_isPauseMenu)
     {
+        _isPauseMenu = false;
+
         HQ.Audio.PlaySoundEffect(
             AudioAssets.PauseClose,
+            0.45f,
+            0f,
+            0f,
+            false);
+    }
+    // GAME -> open pause
+    else
+    {
+        _isPauseMenu = true;
+
+        HQ.Audio.PlaySoundEffect(
+            AudioAssets.PauseOpen,
             0.45f,
             0f,
             0f,
@@ -400,6 +439,12 @@ if (_isPauseMenu)
     _btnResume.Update(gameTime);
     _btnOptions.Update(gameTime);
     _btnMainMenu.Update(gameTime);
+
+    if (_isSettingsMenu)
+    {
+        _settingsPanel.Update(gameTime);
+        return;
+    }
 
     return;
 }
@@ -660,7 +705,12 @@ if (_isPauseMenu)
         _levelUp.Draw(HQ.SpriteBatch, _pixel, _font, HQ.GraphicsDevice.Viewport, _levelUpCardIndex);
 
         if (_isPauseMenu)
-            DrawPauseMenu();
+        {
+            if (_isSettingsMenu)
+                DrawSettingsMenu();
+            else
+                DrawPauseMenu();
+        }
         
         _gameOver.Draw(HQ.SpriteBatch, _pixel, HQ.GraphicsDevice.Viewport);
         _victoryScreen.Draw(HQ.SpriteBatch, _pixel, HQ.GraphicsDevice.Viewport);
@@ -700,7 +750,7 @@ if (_isPauseMenu)
         DrawDiamond(px + pw, py,      4, new Color(147, 112, 168, 180));
         DrawDiamond(px,      py + ph, 4, new Color(147, 112, 168, 180));
         DrawDiamond(px + pw, py + ph, 4, new Color(147, 112, 168, 180));
-
+        
         // Header PAUSED
         if (_font != null)
         {
@@ -720,7 +770,10 @@ if (_isPauseMenu)
         DrawGothicButton(_btnOptions);
         DrawGothicButton(_btnMainMenu);
     }
-
+    private void DrawSettingsMenu()
+    {
+        _settingsPanel.Draw(HQ.GraphicsDevice.Viewport);
+    }
     private void DrawGothicButton(Button btn)
     {
         var r = btn.Bounds;
@@ -750,7 +803,7 @@ if (_isPauseMenu)
                 btn.IsHovered ? new Color(240, 210, 255) : new Color(200, 168, 220));
         }
     }
-
+    
     private void DrawDiamond(int cx, int cy, int size, Color color)
     {
         for (int dy = -size; dy <= size; dy++)
@@ -763,7 +816,6 @@ if (_isPauseMenu)
                 color);
         }
     }
-
     // ── Ability Cards ─────────────────────────────────────────────────────
 
     private IAbility[] CreatePool() => new IAbility[]
