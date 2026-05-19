@@ -45,6 +45,7 @@ public class GameScene : Scene
     private ExperienceBar     _xpBar     = null!;
     private LevelUpScreen     _levelUp   = null!;
     private bool              _isPaused;
+    private bool _pauseKeyReleased = true;
 
     private const int  CARD_COUNT    = 3;
     private IAbility[] _currentCards = Array.Empty<IAbility>();
@@ -359,77 +360,50 @@ _enemySpawner.Start();
     {
         var pad = HQ.Input.GamePads[0];
 
-        // Esc переключает меню паузы (только если не открыт экран левелапа)
-        if ((HQ.Input.Keyboard.WasKeyJustPressed(Keys.Escape)
-            || pad.WasButtonJustPressed(Buttons.Start))
-            && !_isPaused)
-        {
-            _isPauseMenu = !_isPauseMenu;
+bool pausePressed =
+    (Keyboard.GetState().IsKeyDown(Keys.Escape) && _pauseKeyReleased)
+    || pad.WasButtonJustPressed(Buttons.Start);
 
-            if (_isPauseMenu)
-            {
-                HQ.Audio.PlaySoundEffect(
-                    AudioAssets.PauseOpen,
-                    0.45f,
-                    0f,
-                    0f,
-                    false);
-            }
-            else
-            {
-                HQ.Audio.PlaySoundEffect(
-                    AudioAssets.PauseClose,
-                    0.45f,
-                    0f,
-                    0f,
-                    false);
-            }
-        }
+if (pausePressed)
+{
+    _pauseKeyReleased = false;
 
-        // Pause menu has priority over game pause
-        if (_isPauseMenu)
-        {
-            // Detect which device is active
-            if (pad.WasButtonJustPressed(Buttons.DPadUp)
-                || pad.WasButtonJustPressed(Buttons.DPadDown)
-                || pad.WasButtonJustPressed(Buttons.A)
-                || pad.WasButtonJustPressed(Buttons.B))
-                _usingGamepad = true;
+    _isPauseMenu = !_isPauseMenu;
 
-            if (HQ.Input.Mouse.WasMoved)
-                _usingGamepad = false;
+    if (_isPauseMenu)
+    {
+        HQ.Audio.PlaySoundEffect(
+            AudioAssets.PauseOpen,
+            0.45f,
+            0f,
+            0f,
+            false);
+    }
+    else
+    {
+        HQ.Audio.PlaySoundEffect(
+            AudioAssets.PauseClose,
+            0.45f,
+            0f,
+            0f,
+            false);
+    }
+}
 
-            // ── Gamepad path ──
-            if (_usingGamepad)
-            {
-                if (pad.WasButtonJustPressed(Buttons.DPadUp)
-                    || pad.WasButtonJustPressed(Buttons.LeftThumbstickUp))
-                    _pauseMenuIndex = Math.Max(0, _pauseMenuIndex - 1);
+if (Keyboard.GetState().IsKeyUp(Keys.Escape))
+{
+    _pauseKeyReleased = true;
+}
 
-                if (pad.WasButtonJustPressed(Buttons.DPadDown)
-                    || pad.WasButtonJustPressed(Buttons.LeftThumbstickDown))
-                    _pauseMenuIndex = Math.Min(1, _pauseMenuIndex + 1);
+if (_isPauseMenu)
+{
+    _btnResume.Update(gameTime);
+    _btnOptions.Update(gameTime);
+    _btnMainMenu.Update(gameTime);
 
-                if (pad.WasButtonJustPressed(Buttons.A))
-                {
-                    if (_pauseMenuIndex == 0) _isPauseMenu = false;
-                    else HQ.ChangeScene(new MainMenuScene());
-                }
-
-                if (pad.WasButtonJustPressed(Buttons.B))
-                    _isPauseMenu = false;
-            }
-
-            // ForceHover only when gamepad is active
-            _btnResume.ForceHover   = _usingGamepad && _pauseMenuIndex == 0;
-            _btnMainMenu.ForceHover = _usingGamepad && _pauseMenuIndex == 1;
-
-            // Mouse clicks always go through Button.Update
-            _btnResume.Update(gameTime);
-            _btnOptions.Update(gameTime);
-            _btnMainMenu.Update(gameTime);
-            return;
-        }
+    return;
+}
+        
 
         // UI has priority over game input
         _xpBar.Update(gameTime);
@@ -782,22 +756,12 @@ _enemySpawner.Start();
         for (int dy = -size; dy <= size; dy++)
         {
             int dx = size - Math.Abs(dy);
-            HQ.SpriteBatch.Draw(_pixel, new Rectangle(cx - dx, cy + dy, dx * 2, 1), color);
-        }
-        Button[] pauseButtons = { _btnResume, _btnMainMenu };
-        for (int i = 0; i < pauseButtons.Length; i++)
-        {
-            if (i == _pauseMenuIndex)
-            {
-                var r = pauseButtons[i].Bounds;
-                HQ.SpriteBatch.Draw(_pixel,
-                    new Rectangle(r.X - 4, r.Y - 4, r.Width + 8, r.Height + 8),
-                    Color.White * 0.15f);
-            }
-        }
 
-        _btnResume.Draw(HQ.SpriteBatch, _pixel, _font);
-        _btnMainMenu.Draw(HQ.SpriteBatch, _pixel, _font);
+            HQ.SpriteBatch.Draw(
+                _pixel,
+                new Rectangle(cx - dx, cy + dy, dx * 2, 1),
+                color);
+        }
     }
 
     // ── Ability Cards ─────────────────────────────────────────────────────
