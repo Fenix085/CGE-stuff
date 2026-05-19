@@ -436,14 +436,15 @@ if (Keyboard.GetState().IsKeyUp(Keys.Escape))
 
 if (_isPauseMenu)
 {
-    _btnResume.Update(gameTime);
-    _btnOptions.Update(gameTime);
-    _btnMainMenu.Update(gameTime);
-
     if (_isSettingsMenu)
     {
         _settingsPanel.Update(gameTime);
-        return;
+    }
+    else
+    {
+        _btnResume.Update(gameTime);
+        _btnOptions.Update(gameTime);
+        _btnMainMenu.Update(gameTime);
     }
 
     return;

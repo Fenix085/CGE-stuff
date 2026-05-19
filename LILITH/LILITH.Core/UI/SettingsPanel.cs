@@ -77,7 +77,15 @@ public class SettingsPanel
 
         _btnBack.OnClick += () =>
         {
-            HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
+            if (AudioAssets.ButtonClick != null)
+{
+    HQ.Audio.PlaySoundEffect(
+        AudioAssets.ButtonClick,
+        0.35f,
+        0f,
+        0f,
+        false);
+}
             _onBack?.Invoke();
         };
     }

@@ -18,6 +18,7 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
 using LILITH.Audio;
+using LILITH.UI;
 
 namespace LILITH.Core.Scenes;
 
@@ -55,6 +56,8 @@ public class EndlessScene : Scene
     // ── Pause ─────────────────────────────────────────────────────────────
 
     private bool          _isPauseMenu;
+    private SettingsPanel _settingsPanel = null!;
+    private bool _isSettingsMenu;
     private Button        _btnResume   = null!;
     private Button        _btnOptions  = null!;
     private Button        _btnMainMenu = null!;
@@ -97,6 +100,13 @@ public class EndlessScene : Scene
         _pixel = new Texture2D(HQ.GraphicsDevice, 1, 1);
         _pixel.SetData(new[] { Color.White });
         _font  = Content.Load<SpriteFont>("DefaultFont");
+
+        _settingsPanel = new SettingsPanel(
+        _pixel,
+        _font,
+        () => _isSettingsMenu = false);
+
+        _settingsPanel.Initialize(HQ.GraphicsDevice.Viewport);
 
         _mapTexture = Content.Load<Texture2D>("map");
 
@@ -186,14 +196,19 @@ public class EndlessScene : Scene
         };
         _btnOptions.OnClick += () =>
         {
-            HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
-            HQ.ChangeScene(new OptionsScene(() => new MainMenuScene()));
+            HQ.Audio.PlaySoundEffect(AudioAssets.PauseOpen);
+
+            _isSettingsMenu = true;
         };
         _btnMainMenu.OnClick += () =>
-        {
-            HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
-            HQ.ChangeScene(new MainMenuScene());
-        };
+    {
+        HQ.Audio.PlaySoundEffect(AudioAssets.PauseClose);
+
+        _isSettingsMenu = false;
+        _isPauseMenu = false;
+
+        HQ.ChangeScene(new MainMenuScene());
+    };
 
         // ── Enemies ──
         _agentRegion = MakeSolidRegion(8, 8, Color.White);
@@ -244,30 +259,51 @@ public class EndlessScene : Scene
         var pad = HQ.Input.GamePads[0];
         // Esc for pause
         KeyboardState keys = Keyboard.GetState();
-        if (keys.IsKeyDown(Keys.Escape) && _pauseKeyReleased)
-        {
-            _pauseKeyReleased = false;
+        bool pausePressed =
+    (keys.IsKeyDown(Keys.Escape) && _pauseKeyReleased)
+    || pad.WasButtonJustPressed(Buttons.Start);
 
-            _isPauseMenu = !_isPauseMenu;
+if (pausePressed)
+{
+    _pauseKeyReleased = false;
 
-            if (_isPauseMenu)
-            {
-                HQ.Audio.PlaySoundEffect(
-                    AudioAssets.PauseOpen,
-                    0.45f,
-                    0f,
-                    0f,
-                    false);
-            }
-            else
-            {
-                HQ.Audio.PlaySoundEffect(
-                    AudioAssets.PauseClose,
-                    0.45f,
-                    0f,
-                    0f,
-                    false);
-            }
+    // SETTINGS -> back to pause
+    if (_isSettingsMenu)
+    {
+        _isSettingsMenu = false;
+
+        HQ.Audio.PlaySoundEffect(
+            AudioAssets.PauseClose,
+            0.45f,
+            0f,
+            0f,
+            false);
+    }
+    // PAUSE -> resume
+    else if (_isPauseMenu)
+    {
+        _isPauseMenu = false;
+
+        HQ.Audio.PlaySoundEffect(
+            AudioAssets.PauseClose,
+            0.45f,
+            0f,
+            0f,
+            false);
+    }
+    // GAME -> open pause
+    else
+    {
+        _isPauseMenu = true;
+
+        HQ.Audio.PlaySoundEffect(
+            AudioAssets.PauseOpen,
+            0.45f,
+            0f,
+            0f,
+            false);
+    }
+
         }
         if (keys.IsKeyUp(Keys.Escape))
         {
@@ -276,12 +312,20 @@ public class EndlessScene : Scene
 
         // Pause menu has priority over game pause
         if (_isPauseMenu)
-        {
-            _btnResume.Update(gameTime);
-            _btnOptions.Update(gameTime);
-            _btnMainMenu.Update(gameTime);
-            return;
-        }
+{
+    if (_isSettingsMenu)
+    {
+        _settingsPanel.Update(gameTime);
+    }
+    else
+    {
+        _btnResume.Update(gameTime);
+        _btnOptions.Update(gameTime);
+        _btnMainMenu.Update(gameTime);
+    }
+
+    return;
+}
 
         _xpBar.Update(gameTime);
         _levelUp.Update(gameTime, HQ.GraphicsDevice.Viewport);
@@ -540,7 +584,13 @@ public class EndlessScene : Scene
 
         _levelUp.Draw(HQ.SpriteBatch, _pixel, _font, HQ.GraphicsDevice.Viewport, _levelUpCardIndex);
 
-        if (_isPauseMenu) DrawPauseMenu();
+        if (_isPauseMenu)
+        {
+            if (_isSettingsMenu)
+                _settingsPanel.Draw(HQ.GraphicsDevice.Viewport);
+            else
+                DrawPauseMenu();
+        }
 
         _gameOver.Draw(HQ.SpriteBatch, _pixel, HQ.GraphicsDevice.Viewport);
 

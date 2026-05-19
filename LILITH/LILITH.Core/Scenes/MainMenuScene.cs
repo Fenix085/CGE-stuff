@@ -20,6 +20,8 @@ public class MainMenuScene : Scene
     private Button _btnPlay = null!;
     private Button _btnOptions = null!;
     private Button _btnExit = null!;
+    private SettingsPanel _settingsPanel = null!;
+    private bool _isSettingsMenu;
     private bool _pendingSceneChange;
     private float _sceneChangeTimer;
     private Action? _nextAction;
@@ -42,6 +44,13 @@ public class MainMenuScene : Scene
         _pixel.SetData(new[] { Color.White });
 
         _font = Content.Load<SpriteFont>("DefaultFont");
+        
+        _settingsPanel = new SettingsPanel(
+        _pixel,
+        _font,
+        () => _isSettingsMenu = false);
+
+    _settingsPanel.Initialize(HQ.GraphicsDevice.Viewport);
 
         if (AudioAssets.ButtonClick == null)
         {
@@ -53,6 +62,17 @@ public class MainMenuScene : Scene
         {
             AudioAssets.MainMenuMusic =
                 HQ.Content.Load<Song>("audio/mainmenumusic");
+            if (AudioAssets.PauseOpen == null)
+{
+    AudioAssets.PauseOpen =
+        HQ.Content.Load<SoundEffect>("audio/pause_in");
+}
+
+if (AudioAssets.PauseClose == null)
+{
+    AudioAssets.PauseClose =
+        HQ.Content.Load<SoundEffect>("audio/pause_out");
+}
         }
 
         var vp = HQ.GraphicsDevice.Viewport;
@@ -136,18 +156,18 @@ public class MainMenuScene : Scene
         };
 
         _btnOptions.OnClick += () =>
-        {
-            if (_pendingSceneChange)
-                return;
+{
+    if (_pendingSceneChange)
+        return;
 
-            HQ.Audio.PlaySoundEffect(
-                AudioAssets.ButtonClick,
-                0.45f,
-                0f,
-                0f,
-                false);
+    HQ.Audio.PlaySoundEffect(
+        AudioAssets.ButtonClick,
+        0.45f,
+        0f,
+        0f,
+        false);
 
-            HQ.ChangeScene(new OptionsScene(() => new MainMenuScene()));
+    _isSettingsMenu = true;
         };
 
         var rng = new Random(42);
@@ -167,6 +187,21 @@ public class MainMenuScene : Scene
     {
         _time += (float)gameTime.ElapsedGameTime.TotalSeconds;
         var pad = HQ.Input.GamePads[0];
+        if (_isSettingsMenu)
+{
+    if (HQ.Input.Keyboard.WasKeyJustPressed(Keys.Escape)
+        || pad.WasButtonJustPressed(Buttons.B))
+    {
+        HQ.Audio.PlaySoundEffect(
+            AudioAssets.PauseClose,
+            0.45f,
+            0f,
+            0f,
+            false);
+
+        _isSettingsMenu = false;
+    }
+}
 
         if (pad.WasButtonJustPressed(Buttons.DPadUp)
             || pad.WasButtonJustPressed(Buttons.DPadDown)
@@ -185,21 +220,44 @@ public class MainMenuScene : Scene
 
             if (pad.WasButtonJustPressed(Buttons.DPadDown)
                 || pad.WasButtonJustPressed(Buttons.LeftThumbstickDown))
-                _menuIndex = Math.Min(1, _menuIndex + 1);
+                _menuIndex = Math.Min(2, _menuIndex + 1);
 
             if (pad.WasButtonJustPressed(Buttons.A))
             {
-                if (_menuIndex == 0) HQ.ChangeScene(new LevelSelectScene());
-                else                 HQ.Instance.Exit();
+                if (_menuIndex == 0)
+{
+    HQ.ChangeScene(new LevelSelectScene());
+}
+else if (_menuIndex == 1)
+{
+    _isSettingsMenu = true;
+}
+else
+{
+    HQ.Instance.Exit();
+}
             }
         }
 
-        _btnPlay.ForceHover = _usingGamepad && _menuIndex == 0;
-        _btnExit.ForceHover = _usingGamepad && _menuIndex == 1;
+        _btnPlay.ForceHover =
+    _usingGamepad && _menuIndex == 0;
 
-        _btnPlay.Update(gameTime);
-        _btnOptions.Update(gameTime);
-        _btnExit.Update(gameTime);
+_btnOptions.ForceHover =
+    _usingGamepad && _menuIndex == 1;
+
+_btnExit.ForceHover =
+    _usingGamepad && _menuIndex == 2;
+
+        if (_isSettingsMenu)
+{
+    _settingsPanel.Update(gameTime);
+}
+else
+{
+    _btnPlay.Update(gameTime);
+    _btnOptions.Update(gameTime);
+    _btnExit.Update(gameTime);
+}
 
         if (_pendingSceneChange)
         {
@@ -320,9 +378,16 @@ public class MainMenuScene : Scene
         }
 
         // ── Buttons ────────────────────────────────────────────────────────
-        DrawGothicButton(_btnPlay, vw);
-        DrawGothicButton(_btnOptions, vw);
-        DrawGothicButton(_btnExit, vw);
+        if (_isSettingsMenu)
+{
+    _settingsPanel.Draw(HQ.GraphicsDevice.Viewport);
+}
+else
+{
+    DrawGothicButton(_btnPlay, vw);
+    DrawGothicButton(_btnOptions, vw);
+    DrawGothicButton(_btnExit, vw);
+}
 
         HQ.SpriteBatch.End();
     }
